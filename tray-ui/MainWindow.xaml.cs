@@ -1,37 +1,204 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Windowing;
+using tray_ui.Services;
+using tray_ui.ViewModels;
 using WinRT.Interop;
-using Windows.Graphics;
-using Microsoft.UI;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace tray_ui;
 
-/// <summary>
-/// An empty window that can be used on its own or navigated to within a Frame.
-/// </summary>
 public sealed partial class MainWindow : Window
 {
-    public MainWindow()
+    private readonly UsageMonitor _monitor;
+    private AppWindow? _appWindow;
+    private readonly ObservableCollection<string> _settingsRoots = new();
+    private bool _allowClose;
+
+    public MainViewModel ViewModel { get; } = new();
+
+    public MainWindow(UsageMonitor monitor)
     {
+        _monitor = monitor;
         InitializeComponent();
 
         ExtendsContentIntoTitleBar = true;
-
-        SetTitleBar(AppTitleBar);
-        // Set the initial window size (width, height)
         SetInitialWindowSize(900, 600);
+        InitializeWindowEvents();
+
+        RootGrid.DataContext = ViewModel;
+        ViewModel.Update(_monitor.Summary);
+        _monitor.SummaryUpdated += (_, summary) => ViewModel.Update(summary);
+
+        SettingsRootsList.ItemsSource = _settingsRoots;
     }
 
-    private void AppTitleBar_BackRequested(TitleBar sender, object args)
+    public void ShowWindow()
     {
-        if (rootFrame.CanGoBack == true)
+        if (_appWindow != null)
         {
-            rootFrame.GoBack();
+            _appWindow.Show();
+            _appWindow.MoveInZOrderAtTop();
         }
+
+        Activate();
+    }
+
+    public void RequestClose()
+    {
+        _allowClose = true;
+        Close();
+    }
+
+    private async void FullRescan_Click(object sender, RoutedEventArgs e)
+    {
+        await _monitor.FullRescanAsync();
+    }
+
+    private async void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        LoadSettings();
+        SettingsDialog.XamlRoot = RootGrid.XamlRoot;
+        await SettingsDialog.ShowAsync();
+    }
+
+    private void SettingsAddRoot_Click(object sender, RoutedEventArgs e)
+    {
+        var text = SettingsRootInput.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        if (!_settingsRoots.Contains(text, StringComparer.OrdinalIgnoreCase))
+        {
+            _settingsRoots.Add(text);
+        }
+
+        SettingsRootInput.Text = string.Empty;
+    }
+
+    private void SettingsRemoveRoot_Click(object sender, RoutedEventArgs e)
+    {
+        if (SettingsRootsList.SelectedItem is string value)
+        {
+            _settingsRoots.Remove(value);
+        }
+    }
+
+    private async void SettingsDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        var refreshValue = SettingsRefreshMinutesBox.Value;
+        if (double.IsNaN(refreshValue) || refreshValue <= 0)
+        {
+            refreshValue = 5;
+        }
+
+        var codexSettings = new Models.ProviderSettings
+        {
+            Enabled = SettingsCodexEnabledBox.IsChecked == true,
+            SourceMode = ParseSourceMode(SettingsCodexSourceBox.SelectedIndex),
+            CookieSource = ParseCookieSource(SettingsCodexCookieSourceBox.SelectedIndex),
+            CookieHeader = SettingsCodexCookieHeaderBox.Text?.Trim()
+        };
+
+        var claudeSettings = new Models.ProviderSettings
+        {
+            Enabled = SettingsClaudeEnabledBox.IsChecked == true,
+            SourceMode = ParseSourceMode(SettingsClaudeSourceBox.SelectedIndex),
+            CookieSource = ParseCookieSource(SettingsClaudeCookieSourceBox.SelectedIndex),
+            CookieHeader = SettingsClaudeCookieHeaderBox.Text?.Trim()
+        };
+
+        var settings = new Models.AppSettings
+        {
+            LogRoots = _settingsRoots.ToList(),
+            RefreshMinutes = (int)Math.Max(1, refreshValue),
+            WatchFileChanges = SettingsWatchChangesBox.IsChecked == true,
+            Codex = codexSettings,
+            Claude = claudeSettings
+        };
+
+        await _monitor.SaveSettingsAsync(settings);
+    }
+
+    private void LoadSettings()
+    {
+        _settingsRoots.Clear();
+        foreach (var root in _monitor.Settings.LogRoots)
+        {
+            _settingsRoots.Add(root);
+        }
+
+        SettingsRefreshMinutesBox.Value = _monitor.Settings.RefreshMinutes;
+        SettingsWatchChangesBox.IsChecked = _monitor.Settings.WatchFileChanges;
+        SettingsCodexEnabledBox.IsChecked = _monitor.Settings.Codex.Enabled;
+        SettingsCodexSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Codex.SourceMode);
+        SettingsCodexCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Codex.CookieSource);
+        SettingsCodexCookieHeaderBox.Text = _monitor.Settings.Codex.CookieHeader ?? string.Empty;
+
+        SettingsClaudeEnabledBox.IsChecked = _monitor.Settings.Claude.Enabled;
+        SettingsClaudeSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Claude.SourceMode);
+        SettingsClaudeCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Claude.CookieSource);
+        SettingsClaudeCookieHeaderBox.Text = _monitor.Settings.Claude.CookieHeader ?? string.Empty;
+    }
+
+    private static Models.ProviderSourceMode ParseSourceMode(int selectedIndex)
+    {
+        return selectedIndex switch
+        {
+            1 => Models.ProviderSourceMode.OAuth,
+            2 => Models.ProviderSourceMode.Web,
+            3 => Models.ProviderSourceMode.Cli,
+            _ => Models.ProviderSourceMode.Auto
+        };
+    }
+
+    private static int SourceIndex(Models.ProviderSourceMode mode)
+    {
+        return mode switch
+        {
+            Models.ProviderSourceMode.OAuth => 1,
+            Models.ProviderSourceMode.Web => 2,
+            Models.ProviderSourceMode.Cli => 3,
+            _ => 0
+        };
+    }
+
+    private static Models.CookieSourceMode ParseCookieSource(int selectedIndex)
+    {
+        return selectedIndex == 1 ? Models.CookieSourceMode.Manual : Models.CookieSourceMode.Auto;
+    }
+
+    private static int CookieIndex(Models.CookieSourceMode mode)
+    {
+        return mode == Models.CookieSourceMode.Manual ? 1 : 0;
+    }
+
+
+    private void InitializeWindowEvents()
+    {
+        var hwnd = WindowNative.GetWindowHandle(this);
+        var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+        _appWindow = AppWindow.GetFromWindowId(windowId);
+        if (_appWindow != null)
+        {
+            _appWindow.Closing += AppWindow_Closing;
+        }
+    }
+
+    private void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (_allowClose)
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        sender.Hide();
     }
 
     private void SetInitialWindowSize(int width, int height)
@@ -43,13 +210,11 @@ public sealed partial class MainWindow : Window
             var appWindow = AppWindow.GetFromWindowId(windowId);
             if (appWindow != null)
             {
-                var size = new SizeInt32 { Width = width, Height = height };
-                appWindow.Resize(size);
+                appWindow.Resize(new Windows.Graphics.SizeInt32 { Width = width, Height = height });
             }
         }
         catch
         {
-            // If the Windowing APIs aren't available at runtime, silently ignore.
         }
     }
 }

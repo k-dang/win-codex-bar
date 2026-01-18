@@ -4,8 +4,7 @@
 The WinUI 3 desktop app lives under `tray-ui/`. Core entry points are `tray-ui/App.xaml`, `tray-ui/App.xaml.cs`, and `tray-ui/MainWindow.xaml` for the shell window. UI pages are in `tray-ui/Views/` (for example, `AllNotesPage.xaml` and `NotePage.xaml`), and simple data models live in `tray-ui/Models/`. App assets and icons are stored in `tray-ui/Assets/`. Packaging and app configuration are in `tray-ui/Package.appxmanifest` and `tray-ui/app.manifest`, while publish profiles and launch settings live in `tray-ui/Properties/`. Build outputs are under `tray-ui/bin/` and `tray-ui/obj/` and should not be edited manually.
 
 ## Build, Test, and Development Commands
-- `dotnet build tray-ui/tray-ui.csproj -c Debug` builds the WinUI app.
-- `dotnet run --project tray-ui/tray-ui.csproj -c Debug` launches the app locally.
+- `dotnet build tray-ui/tray-ui.csproj -r win-x64` builds the WinUI app.
 - `dotnet test` runs unit tests in the project.
 
 ## Coding Style & Naming Conventions
