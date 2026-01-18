@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="./tray-ui-tests/tray-ui-tests.csproj" Id="6a037284-ba36-4413-ba17-714b0b3c4a4f" />
+  <Project Path="./tray-ui/tray-ui.csproj">
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Deploy />
+  </Project>
+</Solution>
