@@ -58,7 +58,7 @@ public class SettingsStore
                 settings.RefreshMinutes = defaults.RefreshMinutes;
             }
 
-            settings.Codex ??= ProviderSettings.CreateDefault(ProviderKind.Codex);
+            settings.NormalizeProviders();
 
             return settings;
         }
@@ -84,7 +84,7 @@ public class SettingsStore
         {
             AddCodexSessionsRoot(settings.LogRoots);
         }
-        settings.Codex ??= ProviderSettings.CreateDefault(ProviderKind.Codex);
+        settings.NormalizeProviders();
 
         var json = JsonSerializer.Serialize(settings, SerializerOptions);
         Directory.CreateDirectory(ApplicationData.Current.LocalFolder.Path);
