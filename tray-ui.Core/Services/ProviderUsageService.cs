@@ -33,11 +33,6 @@ public sealed class ProviderUsageService
             snapshots.Add(await FetchCodexAsync(settings.Codex, cancellationToken).ConfigureAwait(false));
         }
 
-        if (settings.Claude.Enabled)
-        {
-            snapshots.Add(await FetchClaudeAsync(settings.Claude, cancellationToken).ConfigureAwait(false));
-        }
-
         return snapshots;
     }
 
@@ -74,43 +69,6 @@ public sealed class ProviderUsageService
             Provider = ProviderKind.Codex,
             SourceLabel = SourceLabel(settings.SourceMode),
             Error = errors.Count == 0 ? "No Codex usage sources available." : string.Join(" ", errors),
-            UpdatedAt = DateTimeOffset.Now
-        };
-    }
-
-    private async Task<ProviderUsageSnapshot> FetchClaudeAsync(ProviderSettings settings, CancellationToken cancellationToken)
-    {
-        var errors = new List<string>();
-        var sources = ResolveSourceOrder(settings.SourceMode);
-
-        foreach (var source in sources)
-        {
-            try
-            {
-                var snapshot = source switch
-                {
-                    ProviderSourceMode.OAuth => await TryFetchClaudeOAuthAsync(cancellationToken).ConfigureAwait(false),
-                    ProviderSourceMode.Web => await TryFetchClaudeWebAsync(settings, cancellationToken).ConfigureAwait(false),
-                    ProviderSourceMode.Cli => await TryFetchClaudeCliAsync(cancellationToken).ConfigureAwait(false),
-                    _ => null
-                };
-
-                if (snapshot != null)
-                {
-                    return snapshot;
-                }
-            }
-            catch (Exception ex)
-            {
-                errors.Add(ex.Message);
-            }
-        }
-
-        return new ProviderUsageSnapshot
-        {
-            Provider = ProviderKind.Claude,
-            SourceLabel = SourceLabel(settings.SourceMode),
-            Error = errors.Count == 0 ? "No Claude usage sources available." : string.Join(" ", errors),
             UpdatedAt = DateTimeOffset.Now
         };
     }
@@ -217,98 +175,6 @@ public sealed class ProviderUsageService
         };
     }
 
-    private async Task<ProviderUsageSnapshot?> TryFetchClaudeOAuthAsync(CancellationToken cancellationToken)
-    {
-        var credentials = ClaudeOAuthCredentialsStore.Load();
-        if (credentials == null)
-        {
-            return null;
-        }
-
-        if (credentials.IsExpired)
-        {
-            throw new InvalidOperationException("Claude OAuth token expired. Run `claude` to refresh.");
-        }
-
-        if (!credentials.Scopes.Contains("user:profile", StringComparer.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Claude OAuth token missing 'user:profile' scope.");
-        }
-
-        var usage = await ClaudeOAuthUsageFetcher.FetchUsageAsync(_httpClient, credentials.AccessToken, cancellationToken)
-            .ConfigureAwait(false);
-
-        var primary = ToWindow(usage.FiveHour, "Session", 300);
-        var secondary = ToWindow(usage.SevenDay, "Weekly", null);
-
-        return new ProviderUsageSnapshot
-        {
-            Provider = ProviderKind.Claude,
-            SourceLabel = "oauth",
-            AccountPlan = credentials.RateLimitTier,
-            Primary = primary,
-            Secondary = secondary,
-            UpdatedAt = DateTimeOffset.Now
-        };
-    }
-
-    private async Task<ProviderUsageSnapshot?> TryFetchClaudeWebAsync(ProviderSettings settings, CancellationToken cancellationToken)
-    {
-        if (settings.CookieSource != CookieSourceMode.Manual || string.IsNullOrWhiteSpace(settings.CookieHeader))
-        {
-            return null;
-        }
-
-        var usage = await ClaudeWebApiFetcher.FetchUsageAsync(
-            _httpClient,
-            settings.CookieHeader,
-            cancellationToken).ConfigureAwait(false);
-
-        return new ProviderUsageSnapshot
-        {
-            Provider = ProviderKind.Claude,
-            SourceLabel = "web",
-            AccountEmail = usage.AccountEmail,
-            AccountPlan = usage.LoginMethod,
-            Primary = new UsageWindow
-            {
-                Label = "Session",
-                UsedPercent = usage.SessionPercentUsed,
-                ResetsAt = usage.SessionResetsAt,
-                ResetDescription = FormatResetDescription(usage.SessionResetsAt)
-            },
-            Secondary = new UsageWindow
-            {
-                Label = "Weekly",
-                UsedPercent = usage.WeeklyPercentUsed,
-                ResetsAt = usage.WeeklyResetsAt,
-                ResetDescription = FormatResetDescription(usage.WeeklyResetsAt)
-            },
-            CreditsText = usage.ExtraUsageText,
-            UpdatedAt = DateTimeOffset.Now
-        };
-    }
-
-    private async Task<ProviderUsageSnapshot?> TryFetchClaudeCliAsync(CancellationToken cancellationToken)
-    {
-        var result = await ClaudeCliClient.FetchAsync(cancellationToken).ConfigureAwait(false);
-        if (result == null)
-        {
-            return null;
-        }
-
-        return new ProviderUsageSnapshot
-        {
-            Provider = ProviderKind.Claude,
-            SourceLabel = result.SourceLabel,
-            AccountEmail = result.AccountEmail,
-            AccountPlan = result.AccountPlan,
-            Primary = result.Primary,
-            Secondary = result.Secondary,
-            UpdatedAt = DateTimeOffset.Now
-        };
-    }
-
     private static UsageWindow? ToWindow(CodexUsageWindow? window, string label)
     {
         if (window == null)
@@ -325,24 +191,6 @@ public sealed class ProviderUsageService
             Label = label,
             UsedPercent = window.UsedPercent,
             WindowMinutes = window.WindowMinutes,
-            ResetsAt = resetsAt,
-            ResetDescription = FormatResetDescription(resetsAt)
-        };
-    }
-
-    private static UsageWindow? ToWindow(ClaudeOAuthWindow? window, string label, int? windowMinutes)
-    {
-        if (window == null)
-        {
-            return null;
-        }
-
-        var resetsAt = window.ResetsAt;
-        return new UsageWindow
-        {
-            Label = label,
-            UsedPercent = window.Utilization,
-            WindowMinutes = windowMinutes,
             ResetsAt = resetsAt,
             ResetDescription = FormatResetDescription(resetsAt)
         };

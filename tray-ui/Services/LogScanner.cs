@@ -214,11 +214,6 @@ public sealed class LogScanner
 
     private static ProviderKind InferProviderFromPath(string path)
     {
-        if (path.IndexOf("Claude", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            return ProviderKind.Claude;
-        }
-
         if (path.IndexOf("codex", StringComparison.OrdinalIgnoreCase) >= 0)
         {
             return ProviderKind.Codex;

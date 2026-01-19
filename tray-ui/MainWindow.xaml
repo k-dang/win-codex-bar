@@ -249,22 +249,6 @@
                             <ComboBoxItem Content="Manual"/>
                         </ComboBox>
                         <TextBox x:Name="SettingsCodexCookieHeaderBox" PlaceholderText="Codex cookie header (manual)"/>
-
-                        <TextBlock Text="Claude Provider" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        <CheckBox x:Name="SettingsClaudeEnabledBox" Content="Enable Claude usage"/>
-                        <TextBlock Text="Claude source"/>
-                        <ComboBox x:Name="SettingsClaudeSourceBox">
-                            <ComboBoxItem Content="Auto"/>
-                            <ComboBoxItem Content="OAuth"/>
-                            <ComboBoxItem Content="Web (Cookies)"/>
-                            <ComboBoxItem Content="CLI"/>
-                        </ComboBox>
-                        <TextBlock Text="Claude cookie source"/>
-                        <ComboBox x:Name="SettingsClaudeCookieSourceBox">
-                            <ComboBoxItem Content="Auto"/>
-                            <ComboBoxItem Content="Manual"/>
-                        </ComboBox>
-                        <TextBox x:Name="SettingsClaudeCookieHeaderBox" PlaceholderText="Claude cookie header (manual)"/>
                     </StackPanel>
                 </Grid>
             </ScrollViewer>

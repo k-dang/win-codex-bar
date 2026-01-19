@@ -25,7 +25,7 @@ public sealed partial class MainWindow : Window
         _monitor = monitor;
         InitializeComponent();
 
-        ExtendsContentIntoTitleBar = true;
+        ExtendsContentIntoTitleBar = false;
         SetInitialWindowSize(900, 600);
         InitializeWindowEvents();
 
@@ -105,21 +105,12 @@ public sealed partial class MainWindow : Window
             CookieHeader = SettingsCodexCookieHeaderBox.Text?.Trim()
         };
 
-        var claudeSettings = new Models.ProviderSettings
-        {
-            Enabled = SettingsClaudeEnabledBox.IsChecked == true,
-            SourceMode = ParseSourceMode(SettingsClaudeSourceBox.SelectedIndex),
-            CookieSource = ParseCookieSource(SettingsClaudeCookieSourceBox.SelectedIndex),
-            CookieHeader = SettingsClaudeCookieHeaderBox.Text?.Trim()
-        };
-
         var settings = new Models.AppSettings
         {
             LogRoots = _settingsRoots.ToList(),
             RefreshMinutes = (int)Math.Max(1, refreshValue),
             WatchFileChanges = SettingsWatchChangesBox.IsChecked == true,
-            Codex = codexSettings,
-            Claude = claudeSettings
+            Codex = codexSettings
         };
 
         await _monitor.SaveSettingsAsync(settings);
@@ -139,11 +130,6 @@ public sealed partial class MainWindow : Window
         SettingsCodexSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Codex.SourceMode);
         SettingsCodexCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Codex.CookieSource);
         SettingsCodexCookieHeaderBox.Text = _monitor.Settings.Codex.CookieHeader ?? string.Empty;
-
-        SettingsClaudeEnabledBox.IsChecked = _monitor.Settings.Claude.Enabled;
-        SettingsClaudeSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Claude.SourceMode);
-        SettingsClaudeCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Claude.CookieSource);
-        SettingsClaudeCookieHeaderBox.Text = _monitor.Settings.Claude.CookieHeader ?? string.Empty;
     }
 
     private static Models.ProviderSourceMode ParseSourceMode(int selectedIndex)

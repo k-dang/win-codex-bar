@@ -59,7 +59,6 @@ public class SettingsStore
             }
 
             settings.Codex ??= ProviderSettings.CreateDefault(ProviderKind.Codex);
-            settings.Claude ??= ProviderSettings.CreateDefault(ProviderKind.Claude);
 
             return settings;
         }
@@ -86,7 +85,6 @@ public class SettingsStore
             AddCodexSessionsRoot(settings.LogRoots);
         }
         settings.Codex ??= ProviderSettings.CreateDefault(ProviderKind.Codex);
-        settings.Claude ??= ProviderSettings.CreateDefault(ProviderKind.Claude);
 
         var json = JsonSerializer.Serialize(settings, SerializerOptions);
         Directory.CreateDirectory(ApplicationData.Current.LocalFolder.Path);

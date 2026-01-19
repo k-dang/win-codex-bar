@@ -69,11 +69,6 @@ public static class LogParser
     private static ProviderKind TryGetProvider(JsonElement root, ProviderKind hint)
     {
         var provider = TryGetString(root, "provider");
-        if (string.Equals(provider, "claude", StringComparison.OrdinalIgnoreCase))
-        {
-            return ProviderKind.Claude;
-        }
-
         if (string.Equals(provider, "codex", StringComparison.OrdinalIgnoreCase))
         {
             return ProviderKind.Codex;
@@ -82,12 +77,6 @@ public static class LogParser
         var model = TryGetString(root, "model") ?? TryGetString(root, "model_name");
         if (!string.IsNullOrWhiteSpace(model))
         {
-            if (model.IndexOf("claude", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                model.IndexOf("anthropic", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return ProviderKind.Claude;
-            }
-
             if (model.IndexOf("codex", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 model.IndexOf("gpt", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 model.IndexOf("openai", StringComparison.OrdinalIgnoreCase) >= 0)
