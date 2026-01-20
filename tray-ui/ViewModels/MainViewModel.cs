@@ -1,4 +1,3 @@
-using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -9,90 +8,17 @@ namespace tray_ui.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
-    public ObservableCollection<DailyUsage> DailyTotals { get; } = new();
     public ObservableCollection<ProviderUsageRow> ProviderSnapshots { get; } = new();
-    public ObservableCollection<DiagnosticsLine> DiagnosticsLines { get; } = new();
-
-    private int _todayTotal;
-    private int _last7DaysTotal;
-    private int _last30DaysTotal;
-    private string _lastSessionSummary = "No sessions yet";
-
-    public int TodayTotal
-    {
-        get => _todayTotal;
-        set => SetProperty(ref _todayTotal, value);
-    }
-
-    public int Last7DaysTotal
-    {
-        get => _last7DaysTotal;
-        set => SetProperty(ref _last7DaysTotal, value);
-    }
-
-    public int Last30DaysTotal
-    {
-        get => _last30DaysTotal;
-        set => SetProperty(ref _last30DaysTotal, value);
-    }
-
-    public string LastSessionSummary
-    {
-        get => _lastSessionSummary;
-        set => SetProperty(ref _lastSessionSummary, value);
-    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public void Update(UsageSummary summary)
     {
-        DailyTotals.Clear();
-        foreach (var item in summary.DailyTotals.OrderByDescending(item => item.Date))
-        {
-            DailyTotals.Add(item);
-        }
-
         ProviderSnapshots.Clear();
         foreach (var snapshot in summary.ProviderSnapshots.OrderBy(item => item.Provider))
         {
             ProviderSnapshots.Add(ProviderUsageRow.FromSnapshot(snapshot));
         }
-
-        DiagnosticsLines.Clear();
-        foreach (var root in summary.LogRoots)
-        {
-            DiagnosticsLines.Add(new DiagnosticsLine { Label = "Log root", Value = root });
-        }
-        foreach (var snapshot in summary.ProviderSnapshots.OrderBy(item => item.Provider))
-        {
-            var status = string.IsNullOrWhiteSpace(snapshot.Error) ? "ok" : "error";
-            DiagnosticsLines.Add(new DiagnosticsLine
-            {
-                Label = $"{snapshot.Provider} source",
-                Value = $"{snapshot.SourceLabel} ({status})"
-            });
-        }
-        foreach (var error in summary.ScanErrors)
-        {
-            DiagnosticsLines.Add(new DiagnosticsLine { Label = "Scan error", Value = error });
-        }
-
-        var today = DateTime.Today;
-        TodayTotal = summary.DailyTotals
-            .Where(item => item.Date == today)
-            .Sum(item => item.TotalTokens);
-
-        Last7DaysTotal = summary.DailyTotals
-            .Where(item => item.Date >= today.AddDays(-6))
-            .Sum(item => item.TotalTokens);
-
-        Last30DaysTotal = summary.DailyTotals
-            .Where(item => item.Date >= today.AddDays(-29))
-            .Sum(item => item.TotalTokens);
-
-        LastSessionSummary = summary.LastSession == null
-            ? "No sessions yet"
-            : $"{summary.LastSession.Provider} - {summary.LastSession.TotalTokens} tokens";
     }
 
     private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? name = null)
@@ -157,10 +83,4 @@ public sealed class ProviderUsageRow
     {
         return value.HasValue ? $"{value.Value:0}%" : "--";
     }
-}
-
-public sealed class DiagnosticsLine
-{
-    public string Label { get; init; } = string.Empty;
-    public string Value { get; init; } = string.Empty;
 }

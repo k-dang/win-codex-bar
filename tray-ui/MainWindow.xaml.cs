@@ -1,6 +1,4 @@
 using System;
-using System.Collections.ObjectModel;
-using System.Linq;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -15,7 +13,6 @@ public sealed partial class MainWindow : Window
 {
     private readonly UsageMonitor _monitor;
     private AppWindow? _appWindow;
-    private readonly ObservableCollection<string> _settingsRoots = new();
     private bool _allowClose;
 
     public MainViewModel ViewModel { get; } = new();
@@ -32,8 +29,6 @@ public sealed partial class MainWindow : Window
         RootGrid.DataContext = ViewModel;
         ViewModel.Update(_monitor.Summary);
         _monitor.SummaryUpdated += (_, summary) => ViewModel.Update(summary);
-
-        SettingsRootsList.ItemsSource = _settingsRoots;
     }
 
     public void ShowWindow()
@@ -60,30 +55,6 @@ public sealed partial class MainWindow : Window
         await SettingsDialog.ShowAsync();
     }
 
-    private void SettingsAddRoot_Click(object sender, RoutedEventArgs e)
-    {
-        var text = SettingsRootInput.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return;
-        }
-
-        if (!_settingsRoots.Contains(text, StringComparer.OrdinalIgnoreCase))
-        {
-            _settingsRoots.Add(text);
-        }
-
-        SettingsRootInput.Text = string.Empty;
-    }
-
-    private void SettingsRemoveRoot_Click(object sender, RoutedEventArgs e)
-    {
-        if (SettingsRootsList.SelectedItem is string value)
-        {
-            _settingsRoots.Remove(value);
-        }
-    }
-
     private async void SettingsDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var refreshValue = SettingsRefreshMinutesBox.Value;
@@ -102,9 +73,7 @@ public sealed partial class MainWindow : Window
 
         var settings = new Models.AppSettings
         {
-            LogRoots = _settingsRoots.ToList(),
             RefreshMinutes = (int)Math.Max(1, refreshValue),
-            WatchFileChanges = SettingsWatchChangesBox.IsChecked == true,
             Codex = codexSettings
         };
 
@@ -113,14 +82,7 @@ public sealed partial class MainWindow : Window
 
     private void LoadSettings()
     {
-        _settingsRoots.Clear();
-        foreach (var root in _monitor.Settings.LogRoots)
-        {
-            _settingsRoots.Add(root);
-        }
-
         SettingsRefreshMinutesBox.Value = _monitor.Settings.RefreshMinutes;
-        SettingsWatchChangesBox.IsChecked = _monitor.Settings.WatchFileChanges;
         SettingsCodexEnabledBox.IsChecked = _monitor.Settings.Codex.Enabled;
         SettingsCodexSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Codex.SourceMode);
         SettingsCodexCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Codex.CookieSource);

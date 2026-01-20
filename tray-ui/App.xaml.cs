@@ -1,4 +1,3 @@
-using System;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using tray_ui.Services;
@@ -35,18 +34,11 @@ public partial class App : Application
     {
         var dispatcher = DispatcherQueue.GetForCurrentThread();
         var settingsStore = new SettingsStore();
-        var scanner = new LogScanner();
         var providerUsageService = new ProviderUsageService();
-        _monitor = new UsageMonitor(settingsStore, scanner, providerUsageService, dispatcher);
+        _monitor = new UsageMonitor(settingsStore, providerUsageService, dispatcher);
 
         _window = new MainWindow(_monitor);
         _window.Activate();
-
-        _monitor.SummaryUpdated += (_, summary) =>
-        {
-            var todayTotal = summary.DailyTotals.Find(item => item.Date == DateTime.Today)?.TotalTokens ?? 0;
-            _trayService?.UpdateTooltip($"Today: {todayTotal} tokens");
-        };
 
         _ = _monitor.InitializeAsync();
 

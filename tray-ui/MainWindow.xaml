@@ -18,8 +18,6 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
         <Grid ColumnSpacing="12">
@@ -30,7 +28,7 @@
 
             <StackPanel Spacing="4">
                 <TextBlock Text="Win Codex Bar" Style="{ThemeResource TitleTextBlockStyle}"/>
-                <TextBlock Text="Token usage summary" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Text="Provider usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
@@ -110,94 +108,9 @@
                 </ItemsControl>
             </StackPanel>
         </Border>
-
-        <Grid Grid.Row="2" ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <Border Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel>
-                    <TextBlock Text="Today" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <TextBlock Text="{Binding TodayTotal}" Style="{ThemeResource TitleTextBlockStyle}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="1" Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel>
-                    <TextBlock Text="Last 7 days" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <TextBlock Text="{Binding Last7DaysTotal}" Style="{ThemeResource TitleTextBlockStyle}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="2" Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel>
-                    <TextBlock Text="Last 30 days" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <TextBlock Text="{Binding Last30DaysTotal}" Style="{ThemeResource TitleTextBlockStyle}"/>
-                </StackPanel>
-            </Border>
-        </Grid>
-
-        <Grid Grid.Row="3" RowSpacing="12">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <Border Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel>
-                    <TextBlock Text="Last session" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <TextBlock Text="{Binding LastSessionSummary}" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Row="1" Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Diagnostics" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <ItemsControl ItemsSource="{Binding DiagnosticsLines}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding Label}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding Value}"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Row="2" Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Daily history" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <ItemsControl ItemsSource="{Binding DailyTotals}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Padding="8" ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding Date}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding TotalTokens}" />
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-        </Grid>
             
         <ContentDialog x:Name="SettingsDialog"
-                       Grid.RowSpan="4"
+                       Grid.RowSpan="2"
                        Title="Settings"
                        PrimaryButtonText="Save"
                        SecondaryButtonText="Cancel"
@@ -206,33 +119,9 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
                 <Grid Padding="0" RowSpacing="12">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Text="Log Roots" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-
-                    <Grid Grid.Row="1" RowSpacing="8">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <ListView x:Name="SettingsRootsList" SelectionMode="Single"/>
-                        <TextBox x:Name="SettingsRootInput" Grid.Row="1" PlaceholderText="Add a folder path"/>
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
-                            <Button Content="Add" Click="SettingsAddRoot_Click"/>
-                            <Button Content="Remove Selected" Click="SettingsRemoveRoot_Click"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <StackPanel Grid.Row="2" Spacing="8">
+                    <StackPanel Spacing="8">
                         <TextBlock Text="Refresh Interval (minutes)"/>
                         <NumberBox x:Name="SettingsRefreshMinutesBox" Minimum="1" Maximum="120" SpinButtonPlacementMode="Compact"/>
-                        <CheckBox x:Name="SettingsWatchChangesBox" Content="Watch file changes (experimental)"/>
 
                         <TextBlock Text="Codex Provider" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                         <CheckBox x:Name="SettingsCodexEnabledBox" Content="Enable Codex usage"/>

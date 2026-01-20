@@ -25,7 +25,7 @@ public sealed class ProviderUsageService
     {
         _httpClient = httpClient ?? new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         var configured = fetchers?.ToList()
-            ?? new List<IProviderUsageFetcher> { new CodexProviderUsageFetcher(_httpClient) };
+            ?? ProviderFetcherFactory.CreateDefault(_httpClient).ToList();
         _fetchers = configured.ToDictionary(fetcher => fetcher.Kind);
     }
 
@@ -33,10 +33,9 @@ public sealed class ProviderUsageService
     {
         var snapshots = new List<ProviderUsageSnapshot>();
 
-        foreach (var entry in settings.EnumerateProviders())
+        foreach (var provider in settings.EnumerateProviders().Select(entry => entry.Key).OrderBy(provider => provider))
         {
-            var provider = entry.Key;
-            var providerSettings = entry.Value ?? ProviderSettings.CreateDefault(provider);
+            var providerSettings = settings.GetProviderSettings(provider);
             if (!providerSettings.Enabled)
             {
                 continue;

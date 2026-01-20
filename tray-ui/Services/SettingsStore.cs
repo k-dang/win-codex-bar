@@ -43,16 +43,6 @@ public class SettingsStore
                 return defaults;
             }
 
-            settings.LogRoots = AppSettings.NormalizeRoots(settings.LogRoots);
-            if (settings.LogRoots.Count == 0)
-            {
-                settings.LogRoots = defaults.LogRoots;
-            }
-            else
-            {
-                AddCodexSessionsRoot(settings.LogRoots);
-            }
-
             if (settings.RefreshMinutes <= 0)
             {
                 settings.RefreshMinutes = defaults.RefreshMinutes;
@@ -75,34 +65,10 @@ public class SettingsStore
             throw new ArgumentNullException(nameof(settings));
         }
 
-        settings.LogRoots = AppSettings.NormalizeRoots(settings.LogRoots);
-        if (settings.LogRoots.Count == 0)
-        {
-            settings.LogRoots = AppSettings.CreateDefault().LogRoots;
-        }
-        else
-        {
-            AddCodexSessionsRoot(settings.LogRoots);
-        }
         settings.NormalizeProviders();
 
         var json = JsonSerializer.Serialize(settings, SerializerOptions);
         Directory.CreateDirectory(ApplicationData.Current.LocalFolder.Path);
         await File.WriteAllTextAsync(SettingsPath, json).ConfigureAwait(false);
-    }
-
-    internal static void AddCodexSessionsRoot(System.Collections.Generic.List<string> roots)
-    {
-        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        if (string.IsNullOrWhiteSpace(userProfile))
-        {
-            return;
-        }
-
-        var sessionsRoot = Path.Combine(userProfile, ".codex", "sessions");
-        if (!roots.Exists(root => string.Equals(root, sessionsRoot, StringComparison.OrdinalIgnoreCase)))
-        {
-            roots.Add(sessionsRoot);
-        }
     }
 }
