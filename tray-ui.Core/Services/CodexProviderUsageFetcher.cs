@@ -34,9 +34,9 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
             {
                 var snapshot = source switch
                 {
-                    ProviderSourceMode.OAuth => await TryFetchCodexOAuthAsync(cancellationToken).ConfigureAwait(false),
-                    ProviderSourceMode.Web => await TryFetchCodexWebAsync(providerSettings, cancellationToken).ConfigureAwait(false),
-                    ProviderSourceMode.Cli => await TryFetchCodexCliAsync(cancellationToken).ConfigureAwait(false),
+                    ProviderSourceMode.OAuth => await TryFetchCodexOAuthAsync(cancellationToken),
+                    ProviderSourceMode.Web => await TryFetchCodexWebAsync(providerSettings, cancellationToken),
+                    ProviderSourceMode.Cli => await TryFetchCodexCliAsync(cancellationToken),
                     _ => null
                 };
 
@@ -92,7 +92,7 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
 
         if (credentials.NeedsRefresh && !string.IsNullOrWhiteSpace(credentials.RefreshToken))
         {
-            credentials = await CodexTokenRefresher.RefreshAsync(_httpClient, credentials, cancellationToken).ConfigureAwait(false);
+            credentials = await CodexTokenRefresher.RefreshAsync(_httpClient, credentials, cancellationToken);
             CodexOAuthCredentialsStore.Save(credentials);
         }
 
@@ -100,7 +100,7 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
             _httpClient,
             credentials.AccessToken,
             credentials.AccountId,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
         var primary = usage.RateLimit?.PrimaryWindow;
         var secondary = usage.RateLimit?.SecondaryWindow;
@@ -128,7 +128,7 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
         var usage = await CodexOAuthUsageFetcher.FetchUsageWithCookiesAsync(
             _httpClient,
             settings.CookieHeader,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
         return new ProviderUsageSnapshot
         {
@@ -143,7 +143,7 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
 
     private async Task<ProviderUsageSnapshot?> TryFetchCodexCliAsync(CancellationToken cancellationToken)
     {
-        var result = await CodexCliClient.FetchAsync(cancellationToken).ConfigureAwait(false);
+        var result = await CodexCliClient.FetchAsync(cancellationToken);
         if (result == null)
         {
             return null;

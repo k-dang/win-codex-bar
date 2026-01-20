@@ -53,7 +53,7 @@ public sealed class ProviderUsageService
                 continue;
             }
 
-            var snapshot = await fetcher.FetchAsync(settings, providerSettings, cancellationToken).ConfigureAwait(false);
+            var snapshot = await fetcher.FetchAsync(settings, providerSettings, cancellationToken);
             if (snapshot != null)
             {
                 snapshots.Add(snapshot);
@@ -340,8 +340,8 @@ internal static class CodexTokenRefresher
         };
 
         using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        using var response = await httpClient.PostAsync(RefreshEndpoint, content, cancellationToken).ConfigureAwait(false);
-        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.PostAsync(RefreshEndpoint, content, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -467,8 +467,8 @@ internal static class CodexOAuthUsageFetcher
             request.Headers.Add("ChatGPT-Account-Id", accountId);
         }
 
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException($"Codex OAuth API failed ({(int)response.StatusCode}).");
@@ -488,8 +488,8 @@ internal static class CodexOAuthUsageFetcher
         request.Headers.Add("User-Agent", "WinCodexBar");
         request.Headers.Add("Accept", "application/json");
 
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException($"Codex web usage failed ({(int)response.StatusCode}).");
@@ -592,13 +592,13 @@ internal static class CodexCliClient
 {
     public static async Task<CodexCliResult?> FetchAsync(CancellationToken cancellationToken)
     {
-        var rpcResult = await TryFetchViaRpcAsync(cancellationToken).ConfigureAwait(false);
+        var rpcResult = await TryFetchViaRpcAsync(cancellationToken);
         if (rpcResult != null)
         {
             return rpcResult;
         }
 
-        return await TryFetchViaPtyAsync(cancellationToken).ConfigureAwait(false);
+        return await TryFetchViaPtyAsync(cancellationToken);
     }
 
     private static async Task<CodexCliResult?> TryFetchViaRpcAsync(CancellationToken cancellationToken)
@@ -606,13 +606,13 @@ internal static class CodexCliClient
         try
         {
             using var client = new JsonRpcProcessClient("codex", "-s read-only -a untrusted app-server");
-            await client.StartAsync(cancellationToken).ConfigureAwait(false);
+            await client.StartAsync(cancellationToken);
 
             await client.SendAsync(1, "initialize", new { client = new { name = "WinCodexBar", version = "0.1" } }, cancellationToken)
-                .ConfigureAwait(false);
+                ;
 
-            var account = await client.SendAsync(2, "account/read", null, cancellationToken).ConfigureAwait(false);
-            var rateLimits = await client.SendAsync(3, "account/rateLimits/read", null, cancellationToken).ConfigureAwait(false);
+            var account = await client.SendAsync(2, "account/read", null, cancellationToken);
+            var rateLimits = await client.SendAsync(3, "account/rateLimits/read", null, cancellationToken);
 
             var primary = ParseRateWindow(rateLimits, "primary_window", "primaryWindow", "primary");
             var secondary = ParseRateWindow(rateLimits, "secondary_window", "secondaryWindow", "secondary");
@@ -643,7 +643,7 @@ internal static class CodexCliClient
             "",
             "/status\n",
             TimeSpan.FromSeconds(8),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
         if (string.IsNullOrWhiteSpace(output))
         {
@@ -852,7 +852,7 @@ internal sealed class JsonRpcProcessClient : IDisposable
         _stdin = _process.StandardInput;
         _stdout = _process.StandardOutput;
 
-        await Task.Delay(200, cancellationToken).ConfigureAwait(false);
+        await Task.Delay(200, cancellationToken);
     }
 
     public async Task<JsonElement> SendAsync(int id, string method, object? parameters, CancellationToken cancellationToken)
@@ -871,13 +871,13 @@ internal sealed class JsonRpcProcessClient : IDisposable
         };
 
         var json = JsonSerializer.Serialize(payload);
-        await _stdin.WriteLineAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
-        await _stdin.FlushAsync().ConfigureAwait(false);
+        await _stdin.WriteLineAsync(json.AsMemory(), cancellationToken);
+        await _stdin.FlushAsync();
 
         var timeoutAt = DateTimeOffset.Now.AddSeconds(5);
         while (DateTimeOffset.Now < timeoutAt)
         {
-            var line = await _stdout.ReadLineAsync().ConfigureAwait(false);
+            var line = await _stdout.ReadLineAsync();
             if (line == null)
             {
                 break;
@@ -1082,8 +1082,8 @@ internal static class ClaudeOAuthUsageFetcher
         request.Headers.Add("anthropic-beta", BetaHeader);
         request.Headers.Add("User-Agent", "WinCodexBar");
 
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException($"Claude OAuth API failed ({(int)response.StatusCode}).");
@@ -1117,10 +1117,10 @@ internal static class ClaudeWebApiFetcher
             throw new InvalidOperationException("Claude sessionKey cookie missing.");
         }
 
-        var orgId = await FetchOrganizationIdAsync(httpClient, sessionKey, cancellationToken).ConfigureAwait(false);
-        var usage = await FetchUsageAsync(httpClient, sessionKey, orgId, cancellationToken).ConfigureAwait(false);
-        var account = await FetchAccountAsync(httpClient, sessionKey, cancellationToken).ConfigureAwait(false);
-        var extraUsage = await FetchExtraUsageAsync(httpClient, sessionKey, orgId, cancellationToken).ConfigureAwait(false);
+        var orgId = await FetchOrganizationIdAsync(httpClient, sessionKey, cancellationToken);
+        var usage = await FetchUsageAsync(httpClient, sessionKey, orgId, cancellationToken);
+        var account = await FetchAccountAsync(httpClient, sessionKey, cancellationToken);
+        var extraUsage = await FetchExtraUsageAsync(httpClient, sessionKey, orgId, cancellationToken);
 
         return new ClaudeWebUsageResult
         {
@@ -1140,8 +1140,8 @@ internal static class ClaudeWebApiFetcher
         request.Headers.Add("Cookie", $"sessionKey={sessionKey}");
         request.Headers.Add("Accept", "application/json");
 
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException($"Claude org lookup failed ({(int)response.StatusCode}).");
@@ -1170,8 +1170,8 @@ internal static class ClaudeWebApiFetcher
         request.Headers.Add("Cookie", $"sessionKey={sessionKey}");
         request.Headers.Add("Accept", "application/json");
 
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException($"Claude usage failed ({(int)response.StatusCode}).");
@@ -1202,8 +1202,8 @@ internal static class ClaudeWebApiFetcher
         request.Headers.Add("Cookie", $"sessionKey={sessionKey}");
         request.Headers.Add("Accept", "application/json");
 
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             return null;
@@ -1222,8 +1222,8 @@ internal static class ClaudeWebApiFetcher
         request.Headers.Add("Cookie", $"sessionKey={sessionKey}");
         request.Headers.Add("Accept", "application/json");
 
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             return null;
@@ -1367,7 +1367,7 @@ internal static class ClaudeCliClient
             "--allowed-tools \"\"",
             "/usage\n",
             TimeSpan.FromSeconds(10),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
         if (string.IsNullOrWhiteSpace(output))
         {
@@ -1435,22 +1435,22 @@ internal static class ProcessRunner
             return null;
         }
 
-        await process.StandardInput.WriteAsync(input.AsMemory(), cancellationToken).ConfigureAwait(false);
-        await process.StandardInput.FlushAsync().ConfigureAwait(false);
+        await process.StandardInput.WriteAsync(input.AsMemory(), cancellationToken);
+        await process.StandardInput.FlushAsync();
 
         var output = new StringBuilder();
         var started = DateTimeOffset.Now;
 
         while (!process.HasExited && DateTimeOffset.Now - started < timeout)
         {
-            var line = await process.StandardOutput.ReadLineAsync().ConfigureAwait(false);
+            var line = await process.StandardOutput.ReadLineAsync();
             if (line != null)
             {
                 output.AppendLine(line);
                 continue;
             }
 
-            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(50, cancellationToken);
         }
 
         try
@@ -1464,7 +1464,7 @@ internal static class ProcessRunner
         {
         }
 
-        var stderr = await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
+        var stderr = await process.StandardError.ReadToEndAsync();
         if (!string.IsNullOrWhiteSpace(stderr))
         {
             output.AppendLine(stderr);

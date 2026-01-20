@@ -23,7 +23,7 @@ public sealed class UsageMonitor
         _dispatcherQueue = dispatcherQueue;
 
         _timer = dispatcherQueue.CreateTimer();
-        _timer.Tick += async (_, _) => await RefreshAsync().ConfigureAwait(false);
+        _timer.Tick += async (_, _) => await RefreshAsync();
     }
 
     public AppSettings Settings => _settings;
@@ -32,14 +32,14 @@ public sealed class UsageMonitor
 
     public async Task InitializeAsync()
     {
-        _settings = await _settingsStore.LoadAsync().ConfigureAwait(false);
+        _settings = await _settingsStore.LoadAsync();
         ConfigureTimer();
-        await RefreshAsync().ConfigureAwait(false);
+        await RefreshAsync();
     }
 
     public async Task RefreshAsync()
     {
-        var providerSnapshots = await _providerUsageService.FetchAsync(_settings).ConfigureAwait(false);
+        var providerSnapshots = await _providerUsageService.FetchAsync(_settings);
         var summary = new UsageSummary
         {
             LastUpdated = DateTimeOffset.Now
@@ -52,7 +52,7 @@ public sealed class UsageMonitor
     public async Task SaveSettingsAsync(AppSettings settings)
     {
         _settings = settings;
-        await _settingsStore.SaveAsync(settings).ConfigureAwait(false);
+        await _settingsStore.SaveAsync(settings);
         ConfigureTimer();
     }
 

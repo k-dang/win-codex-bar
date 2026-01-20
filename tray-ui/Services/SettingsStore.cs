@@ -31,7 +31,7 @@ public class SettingsStore
                 return defaults;
             }
 
-            var json = await File.ReadAllTextAsync(SettingsPath).ConfigureAwait(false);
+            var json = await File.ReadAllTextAsync(SettingsPath);
             if (string.IsNullOrWhiteSpace(json))
             {
                 return defaults;
@@ -69,6 +69,6 @@ public class SettingsStore
 
         var json = JsonSerializer.Serialize(settings, SerializerOptions);
         Directory.CreateDirectory(ApplicationData.Current.LocalFolder.Path);
-        await File.WriteAllTextAsync(SettingsPath, json).ConfigureAwait(false);
+        await File.WriteAllTextAsync(SettingsPath, json);
     }
 }
