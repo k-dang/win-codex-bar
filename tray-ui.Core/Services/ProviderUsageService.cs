@@ -20,17 +20,21 @@ public sealed class ProviderUsageService
 {
     private readonly HttpClient _httpClient;
     private readonly IReadOnlyDictionary<ProviderKind, IProviderUsageFetcher> _fetchers;
+    private readonly IDiagnosticsLogger? _logger;
 
-    public ProviderUsageService(HttpClient? httpClient = null, IEnumerable<IProviderUsageFetcher>? fetchers = null)
+    public ProviderUsageService(HttpClient? httpClient = null, IEnumerable<IProviderUsageFetcher>? fetchers = null, IDiagnosticsLogger? logger = null)
     {
         _httpClient = httpClient ?? new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        _logger = logger;
         var configured = fetchers?.ToList()
-            ?? ProviderFetcherFactory.CreateDefault(_httpClient).ToList();
+            ?? ProviderFetcherFactory.CreateDefault(_httpClient, logger).ToList();
         _fetchers = configured.ToDictionary(fetcher => fetcher.Kind);
     }
 
     public async Task<IReadOnlyList<ProviderUsageSnapshot>> FetchAsync(AppSettings settings, CancellationToken cancellationToken = default)
     {
+        _logger?.LogRefreshStarted();
+        var refreshStopwatch = Stopwatch.StartNew();
         var snapshots = new List<ProviderUsageSnapshot>();
 
         foreach (var provider in settings.EnumerateProviders().Select(entry => entry.Key).OrderBy(provider => provider))
@@ -69,6 +73,9 @@ public sealed class ProviderUsageService
                 });
             }
         }
+
+        refreshStopwatch.Stop();
+        _logger?.LogRefreshCompleted(refreshStopwatch.Elapsed);
 
         return snapshots;
     }

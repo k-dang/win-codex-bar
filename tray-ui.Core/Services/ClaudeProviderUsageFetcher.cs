@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,10 +11,12 @@ namespace tray_ui.Services;
 public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
 {
     private readonly HttpClient _httpClient;
+    private readonly IDiagnosticsLogger? _logger;
 
-    public ClaudeProviderUsageFetcher(HttpClient httpClient)
+    public ClaudeProviderUsageFetcher(HttpClient httpClient, IDiagnosticsLogger? logger = null)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _logger = logger;
     }
 
     public ProviderKind Kind => ProviderKind.Claude;
@@ -30,6 +33,10 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
 
         foreach (var source in sources)
         {
+            var sourceName = source.ToString();
+            _logger?.LogAttempt(ProviderKind.Claude, sourceName, $"Attempting {sourceName} fetch...");
+            var sw = Stopwatch.StartNew();
+
             try
             {
                 var snapshot = source switch
@@ -40,13 +47,20 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
                     _ => null
                 };
 
+                sw.Stop();
+
                 if (snapshot != null)
                 {
+                    _logger?.LogSuccess(ProviderKind.Claude, sourceName, $"Successfully fetched via {sourceName}", sw.Elapsed);
                     return snapshot;
                 }
+
+                _logger?.LogFailure(ProviderKind.Claude, sourceName, $"No data from {sourceName}", sw.Elapsed);
             }
             catch (Exception ex)
             {
+                sw.Stop();
+                _logger?.LogFailure(ProviderKind.Claude, sourceName, ex.Message, sw.Elapsed);
                 errors.Add(ex.Message);
             }
         }

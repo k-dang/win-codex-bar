@@ -57,9 +57,25 @@ public sealed partial class MainWindow : Window
 
     private void ProviderSelector_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        var isCodex = sender.SelectedItem == SelectorCodex;
-        CodexPanel.Visibility = isCodex ? Visibility.Visible : Visibility.Collapsed;
-        ClaudePanel.Visibility = isCodex ? Visibility.Collapsed : Visibility.Visible;
+        CodexPanel.Visibility = sender.SelectedItem == SelectorCodex ? Visibility.Visible : Visibility.Collapsed;
+        ClaudePanel.Visibility = sender.SelectedItem == SelectorClaude ? Visibility.Visible : Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = sender.SelectedItem == SelectorDiagnostics ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void DiagnosticsFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var filter = DiagnosticsFilterComboBox.SelectedIndex switch
+        {
+            1 => "Codex",
+            2 => "Claude",
+            _ => "All"
+        };
+        ViewModel.SelectedProviderFilter = filter;
+    }
+
+    private void ClearDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ClearDiagnostics();
     }
 
     private async void SettingsDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)

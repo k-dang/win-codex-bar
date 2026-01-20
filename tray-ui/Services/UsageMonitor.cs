@@ -11,20 +11,25 @@ public sealed class UsageMonitor
     private readonly ProviderUsageService _providerUsageService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly DispatcherQueueTimer _timer;
+    private readonly IDiagnosticsLogger? _diagnosticsLogger;
     private AppSettings _settings = AppSettings.CreateDefault();
 
     public UsageMonitor(
         SettingsStore settingsStore,
         ProviderUsageService providerUsageService,
-        DispatcherQueue dispatcherQueue)
+        DispatcherQueue dispatcherQueue,
+        IDiagnosticsLogger? diagnosticsLogger = null)
     {
         _settingsStore = settingsStore;
         _providerUsageService = providerUsageService;
         _dispatcherQueue = dispatcherQueue;
+        _diagnosticsLogger = diagnosticsLogger;
 
         _timer = dispatcherQueue.CreateTimer();
         _timer.Tick += async (_, _) => await RefreshAsync();
     }
+
+    public IDiagnosticsLogger? DiagnosticsLogger => _diagnosticsLogger;
 
     public AppSettings Settings => _settings;
     public UsageSummary Summary { get; private set; } = new();

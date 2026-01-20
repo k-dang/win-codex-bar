@@ -40,6 +40,7 @@
             <SelectorBar x:Name="ProviderSelector" Grid.Row="1" SelectionChanged="ProviderSelector_SelectionChanged">
                 <SelectorBarItem x:Name="SelectorCodex" Text="Codex" IsSelected="True"/>
                 <SelectorBarItem x:Name="SelectorClaude" Text="Claude Code"/>
+                <SelectorBarItem x:Name="SelectorDiagnostics" Text="Diagnostics"/>
             </SelectorBar>
 
             <Border x:Name="CodexPanel" Grid.Row="2" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
@@ -186,6 +187,73 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
+            </Border>
+
+            <Border x:Name="DiagnosticsPanel" Grid.Row="2" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="Collapsed">
+                <Grid RowSpacing="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Diagnostics log" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="DiagnosticsFilterComboBox" Grid.Column="1" SelectedIndex="0" SelectionChanged="DiagnosticsFilterComboBox_SelectionChanged">
+                            <ComboBoxItem Content="All"/>
+                            <ComboBoxItem Content="Codex"/>
+                            <ComboBoxItem Content="Claude"/>
+                        </ComboBox>
+                        <Button Grid.Column="2" Content="Clear Logs" Click="ClearDiagnostics_Click"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Timestamp" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Grid.Column="1" Text="Provider" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Grid.Column="2" Text="Type" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Grid.Column="3" Text="Source" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Grid.Column="4" Text="Message" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Grid.Column="5" Text="Duration" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                        <ItemsControl ItemsSource="{Binding FilteredDiagnosticsEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnSpacing="8" Padding="0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="60"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding TimestampText}" FontFamily="Consolas"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ProviderName}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding EventTypeName}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding SourceMethod}"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Message}" TextTrimming="CharacterEllipsis" Foreground="{Binding MessageForeground}"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding DurationText}" FontFamily="Consolas"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
             </Border>
 
             <ContentDialog x:Name="SettingsDialog"

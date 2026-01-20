@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using tray_ui.Models;
 using tray_ui.Services;
 using WinRT.Interop;
 
@@ -16,6 +17,7 @@ public partial class App : Application
     private Window? _window;
     private TrayService? _trayService;
     private UsageMonitor? _monitor;
+    private DiagnosticsLogger? _diagnosticsLogger;
 
     /// <summary>
     /// Initializes the singleton application object.  This is the first line of authored code
@@ -34,11 +36,21 @@ public partial class App : Application
     {
         var dispatcher = DispatcherQueue.GetForCurrentThread();
         var settingsStore = new SettingsStore();
-        var providerUsageService = new ProviderUsageService();
-        _monitor = new UsageMonitor(settingsStore, providerUsageService, dispatcher);
+
+        _diagnosticsLogger = new DiagnosticsLogger();
+        var providerUsageService = new ProviderUsageService(logger: _diagnosticsLogger);
+        _monitor = new UsageMonitor(settingsStore, providerUsageService, dispatcher, _diagnosticsLogger);
 
         _window = new MainWindow(_monitor);
         _window.Activate();
+
+        if (_window is MainWindow mainWindow)
+        {
+            _diagnosticsLogger.EntryAdded += (_, entry) =>
+            {
+                dispatcher.TryEnqueue(() => mainWindow.ViewModel.AddDiagnosticsEntry(entry));
+            };
+        }
 
         _ = _monitor.InitializeAsync();
 
