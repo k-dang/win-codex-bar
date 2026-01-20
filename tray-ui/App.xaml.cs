@@ -35,10 +35,9 @@ public partial class App : Application
     {
         var dispatcher = DispatcherQueue.GetForCurrentThread();
         var settingsStore = new SettingsStore();
-        var cacheStore = new CacheStore();
-        var scanner = new LogScanner(cacheStore);
+        var scanner = new LogScanner();
         var providerUsageService = new ProviderUsageService();
-        _monitor = new UsageMonitor(settingsStore, scanner, cacheStore, providerUsageService, dispatcher);
+        _monitor = new UsageMonitor(settingsStore, scanner, providerUsageService, dispatcher);
 
         _window = new MainWindow(_monitor);
         _window.Activate();
@@ -54,7 +53,6 @@ public partial class App : Application
         var hwnd = WindowNative.GetWindowHandle(_window);
         _trayService = new TrayService(hwnd);
         _trayService.OpenRequested += (_, _) => ShowMainWindow();
-        _trayService.FullRescanRequested += async (_, _) => await _monitor.FullRescanAsync().ConfigureAwait(false);
         _trayService.ExitRequested += (_, _) => ExitApplication();
     }
 

@@ -53,11 +53,6 @@ public sealed partial class MainWindow : Window
         Close();
     }
 
-    private async void FullRescan_Click(object sender, RoutedEventArgs e)
-    {
-        await _monitor.FullRescanAsync();
-    }
-
     private async void Settings_Click(object sender, RoutedEventArgs e)
     {
         LoadSettings();

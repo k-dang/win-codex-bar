@@ -12,7 +12,6 @@ public sealed class UsageMonitor
 {
     private readonly SettingsStore _settingsStore;
     private readonly LogScanner _scanner;
-    private readonly CacheStore _cacheStore;
     private readonly ProviderUsageService _providerUsageService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly DispatcherQueueTimer _timer;
@@ -23,13 +22,11 @@ public sealed class UsageMonitor
     public UsageMonitor(
         SettingsStore settingsStore,
         LogScanner scanner,
-        CacheStore cacheStore,
         ProviderUsageService providerUsageService,
         DispatcherQueue dispatcherQueue)
     {
         _settingsStore = settingsStore;
         _scanner = scanner;
-        _cacheStore = cacheStore;
         _providerUsageService = providerUsageService;
         _dispatcherQueue = dispatcherQueue;
 
@@ -67,12 +64,6 @@ public sealed class UsageMonitor
         result.Summary.ScanErrors.AddRange(result.Errors);
         Summary = NormalizeSummary(result.Summary);
         _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, Summary));
-    }
-
-    public async Task FullRescanAsync()
-    {
-        await _cacheStore.ClearAsync().ConfigureAwait(false);
-        await RefreshAsync().ConfigureAwait(false);
     }
 
     public async Task SaveSettingsAsync(AppSettings settings)

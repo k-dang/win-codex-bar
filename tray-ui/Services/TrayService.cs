@@ -26,8 +26,7 @@ public sealed class TrayService : IDisposable
     private const uint MF_SEPARATOR = 0x0800;
 
     private const int ID_OPEN = 1001;
-    private const int ID_FULL_RESCAN = 1002;
-    private const int ID_EXIT = 1003;
+    private const int ID_EXIT = 1002;
 
     private readonly IntPtr _hwnd;
     private readonly IntPtr _iconHandle;
@@ -37,7 +36,6 @@ public sealed class TrayService : IDisposable
     private bool _disposed;
 
     public event EventHandler? OpenRequested;
-    public event EventHandler? FullRescanRequested;
     public event EventHandler? ExitRequested;
 
     public TrayService(IntPtr hwnd)
@@ -140,9 +138,6 @@ public sealed class TrayService : IDisposable
                 case ID_OPEN:
                     OpenRequested?.Invoke(this, EventArgs.Empty);
                     return IntPtr.Zero;
-                case ID_FULL_RESCAN:
-                    FullRescanRequested?.Invoke(this, EventArgs.Empty);
-                    return IntPtr.Zero;
                 case ID_EXIT:
                     ExitRequested?.Invoke(this, EventArgs.Empty);
                     return IntPtr.Zero;
@@ -156,7 +151,6 @@ public sealed class TrayService : IDisposable
     {
         var menu = CreatePopupMenu();
         AppendMenu(menu, MF_STRING, ID_OPEN, "Open");
-        AppendMenu(menu, MF_STRING, ID_FULL_RESCAN, "Full Rescan");
         AppendMenu(menu, MF_SEPARATOR, 0, string.Empty);
         AppendMenu(menu, MF_STRING, ID_EXIT, "Exit");
 
