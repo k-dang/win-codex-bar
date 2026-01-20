@@ -9,7 +9,8 @@ internal static class ProviderFetcherFactory
     {
         return new List<IProviderUsageFetcher>
         {
-            new CodexProviderUsageFetcher(httpClient)
+            new CodexProviderUsageFetcher(httpClient),
+            new ClaudeProviderUsageFetcher(httpClient)
         };
     }
 }

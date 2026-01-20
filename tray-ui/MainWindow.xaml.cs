@@ -55,6 +55,13 @@ public sealed partial class MainWindow : Window
         await SettingsDialog.ShowAsync();
     }
 
+    private void ProviderSelector_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    {
+        var isCodex = sender.SelectedItem == SelectorCodex;
+        CodexPanel.Visibility = isCodex ? Visibility.Visible : Visibility.Collapsed;
+        ClaudePanel.Visibility = isCodex ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     private async void SettingsDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var refreshValue = SettingsRefreshMinutesBox.Value;
@@ -71,10 +78,19 @@ public sealed partial class MainWindow : Window
             CookieHeader = SettingsCodexCookieHeaderBox.Text?.Trim()
         };
 
+        var claudeSettings = new Models.ProviderSettings
+        {
+            Enabled = SettingsClaudeEnabledBox.IsChecked == true,
+            SourceMode = ParseSourceMode(SettingsClaudeSourceBox.SelectedIndex),
+            CookieSource = ParseCookieSource(SettingsClaudeCookieSourceBox.SelectedIndex),
+            CookieHeader = SettingsClaudeCookieHeaderBox.Text?.Trim()
+        };
+
         var settings = new Models.AppSettings
         {
             RefreshMinutes = (int)Math.Max(1, refreshValue),
-            Codex = codexSettings
+            Codex = codexSettings,
+            Claude = claudeSettings
         };
 
         await _monitor.SaveSettingsAsync(settings);
@@ -83,10 +99,16 @@ public sealed partial class MainWindow : Window
     private void LoadSettings()
     {
         SettingsRefreshMinutesBox.Value = _monitor.Settings.RefreshMinutes;
+
         SettingsCodexEnabledBox.IsChecked = _monitor.Settings.Codex.Enabled;
         SettingsCodexSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Codex.SourceMode);
         SettingsCodexCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Codex.CookieSource);
         SettingsCodexCookieHeaderBox.Text = _monitor.Settings.Codex.CookieHeader ?? string.Empty;
+
+        SettingsClaudeEnabledBox.IsChecked = _monitor.Settings.Claude.Enabled;
+        SettingsClaudeSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Claude.SourceMode);
+        SettingsClaudeCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Claude.CookieSource);
+        SettingsClaudeCookieHeaderBox.Text = _monitor.Settings.Claude.CookieHeader ?? string.Empty;
     }
 
     private static Models.ProviderSourceMode ParseSourceMode(int selectedIndex)

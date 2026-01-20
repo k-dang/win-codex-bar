@@ -6,6 +6,7 @@ public static class ProviderCatalog
 {
     public static readonly IReadOnlyList<ProviderKind> SupportedProviders = new[]
     {
-        ProviderKind.Codex
+        ProviderKind.Codex,
+        ProviderKind.Claude
     };
 }

@@ -9,15 +9,30 @@ namespace tray_ui.ViewModels;
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     public ObservableCollection<ProviderUsageRow> ProviderSnapshots { get; } = new();
+    public ObservableCollection<ProviderUsageRow> CodexSnapshots { get; } = new();
+    public ObservableCollection<ProviderUsageRow> ClaudeSnapshots { get; } = new();
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public void Update(UsageSummary summary)
     {
         ProviderSnapshots.Clear();
+        CodexSnapshots.Clear();
+        ClaudeSnapshots.Clear();
+
         foreach (var snapshot in summary.ProviderSnapshots.OrderBy(item => item.Provider))
         {
-            ProviderSnapshots.Add(ProviderUsageRow.FromSnapshot(snapshot));
+            var row = ProviderUsageRow.FromSnapshot(snapshot);
+            ProviderSnapshots.Add(row);
+
+            if (snapshot.Provider == ProviderKind.Codex)
+            {
+                CodexSnapshots.Add(row);
+            }
+            else if (snapshot.Provider == ProviderKind.Claude)
+            {
+                ClaudeSnapshots.Add(row);
+            }
         }
     }
 

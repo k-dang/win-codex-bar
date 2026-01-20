@@ -1078,7 +1078,6 @@ internal static class ClaudeOAuthUsageFetcher
         using var request = new HttpRequestMessage(HttpMethod.Get, UsageUrl);
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Add("Accept", "application/json");
-        request.Headers.Add("Content-Type", "application/json");
         request.Headers.Add("anthropic-beta", BetaHeader);
         request.Headers.Add("User-Agent", "WinCodexBar");
 

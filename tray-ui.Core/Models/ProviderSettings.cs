@@ -33,6 +33,12 @@ public sealed class ProviderSettings
                 SourceMode = ProviderSourceMode.Auto,
                 CookieSource = CookieSourceMode.Auto
             },
+            ProviderKind.Claude => new ProviderSettings
+            {
+                Enabled = true,
+                SourceMode = ProviderSourceMode.Auto,
+                CookieSource = CookieSourceMode.Auto
+            },
             _ => new ProviderSettings()
         };
     }

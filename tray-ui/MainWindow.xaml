@@ -18,130 +18,226 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-        <Grid ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <StackPanel Spacing="4">
-                <TextBlock Text="Win Codex Bar" Style="{ThemeResource TitleTextBlockStyle}"/>
-                <TextBlock Text="Provider usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-            </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Win Codex Bar" Style="{ThemeResource TitleTextBlockStyle}"/>
+                    <TextBlock Text="Provider usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Content="Settings" Click="Settings_Click"/>
-            </StackPanel>
-        </Grid>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button Content="Settings" Click="Settings_Click"/>
+                </StackPanel>
+            </Grid>
 
-        <Border Grid.Row="1" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-            <StackPanel Spacing="12">
-                <TextBlock Text="Provider usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                <ItemsControl ItemsSource="{Binding ProviderSnapshots}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                <Grid RowSpacing="10">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
+            <SelectorBar x:Name="ProviderSelector" Grid.Row="1" SelectionChanged="ProviderSelector_SelectionChanged">
+                <SelectorBarItem x:Name="SelectorCodex" Text="Codex" IsSelected="True"/>
+                <SelectorBarItem x:Name="SelectorClaude" Text="Claude Code"/>
+            </SelectorBar>
 
-                                    <Grid ColumnSpacing="12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ProviderName}" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                    </Grid>
+            <Border x:Name="CodexPanel" Grid.Row="2" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Codex usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding CodexSnapshots}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                    <Grid RowSpacing="10">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
 
-                                    <StackPanel Grid.Row="1" Spacing="4">
                                         <Grid ColumnSpacing="12">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding PrimaryLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                            <ProgressBar Grid.Column="1"
+                                            <TextBlock Text="{Binding ProviderName}" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </Grid>
+
+                                        <StackPanel Grid.Row="1" Spacing="4">
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding PrimaryLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                <ProgressBar Grid.Column="1"
                                                          Value="{Binding PrimaryPercent}"
                                                          IsIndeterminate="{Binding PrimaryIndeterminate}"
                                                          Maximum="100"
                                                          Height="8"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding PrimaryPercentText}"/>
-                                        </Grid>
-                                        <TextBlock Text="{Binding PrimaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                    </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding PrimaryPercentText}"/>
+                                            </Grid>
+                                            <TextBlock Text="{Binding PrimaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
 
-                                    <StackPanel Grid.Row="2" Spacing="4">
-                                        <Grid ColumnSpacing="12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding SecondaryLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                            <ProgressBar Grid.Column="1"
+                                        <StackPanel Grid.Row="2" Spacing="4">
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding SecondaryLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                <ProgressBar Grid.Column="1"
                                                          Value="{Binding SecondaryPercent}"
                                                          IsIndeterminate="{Binding SecondaryIndeterminate}"
                                                          Maximum="100"
                                                          Height="8"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding SecondaryPercentText}"/>
-                                        </Grid>
-                                        <TextBlock Text="{Binding SecondaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                    </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding SecondaryPercentText}"/>
+                                            </Grid>
+                                            <TextBlock Text="{Binding SecondaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
 
-                                    <StackPanel Grid.Row="3" Spacing="2">
-                                        <TextBlock Text="{Binding AccountLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                        <TextBlock Text="{Binding CreditsText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                        <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-        </Border>
-            
-        <ContentDialog x:Name="SettingsDialog"
-                       Grid.RowSpan="2"
+                                        <StackPanel Grid.Row="3" Spacing="2">
+                                            <TextBlock Text="{Binding AccountLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding CreditsText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="ClaudePanel" Grid.Row="2" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="Collapsed">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Claude Code usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding ClaudeSnapshots}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                    <Grid RowSpacing="10">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding ProviderName}" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </Grid>
+
+                                        <StackPanel Grid.Row="1" Spacing="4">
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding PrimaryLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                <ProgressBar Grid.Column="1"
+                                                         Value="{Binding PrimaryPercent}"
+                                                         IsIndeterminate="{Binding PrimaryIndeterminate}"
+                                                         Maximum="100"
+                                                         Height="8"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding PrimaryPercentText}"/>
+                                            </Grid>
+                                            <TextBlock Text="{Binding PrimaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="2" Spacing="4">
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding SecondaryLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                <ProgressBar Grid.Column="1"
+                                                         Value="{Binding SecondaryPercent}"
+                                                         IsIndeterminate="{Binding SecondaryIndeterminate}"
+                                                         Maximum="100"
+                                                         Height="8"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding SecondaryPercentText}"/>
+                                            </Grid>
+                                            <TextBlock Text="{Binding SecondaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="3" Spacing="2">
+                                            <TextBlock Text="{Binding AccountLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding CreditsText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <ContentDialog x:Name="SettingsDialog"
+                       Grid.RowSpan="3"
                        Title="Settings"
                        PrimaryButtonText="Save"
                        SecondaryButtonText="Cancel"
                        DefaultButton="Primary"
                        PrimaryButtonClick="SettingsDialog_PrimaryButtonClick">
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
-                <Grid Padding="0" RowSpacing="12">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Refresh Interval (minutes)"/>
-                        <NumberBox x:Name="SettingsRefreshMinutesBox" Minimum="1" Maximum="120" SpinButtonPlacementMode="Compact"/>
+                    <Grid Padding="0"
+                      RowSpacing="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Refresh Interval (minutes)"/>
+                            <NumberBox x:Name="SettingsRefreshMinutesBox" Minimum="1" Maximum="120" />
 
-                        <TextBlock Text="Codex Provider" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        <CheckBox x:Name="SettingsCodexEnabledBox" Content="Enable Codex usage"/>
-                        <TextBlock Text="Codex source"/>
-                        <ComboBox x:Name="SettingsCodexSourceBox">
-                            <ComboBoxItem Content="Auto"/>
-                            <ComboBoxItem Content="OAuth"/>
-                            <ComboBoxItem Content="Web (Cookies)"/>
-                            <ComboBoxItem Content="CLI"/>
-                        </ComboBox>
-                        <TextBlock Text="Codex cookie source"/>
-                        <ComboBox x:Name="SettingsCodexCookieSourceBox">
-                            <ComboBoxItem Content="Auto"/>
-                            <ComboBoxItem Content="Manual"/>
-                        </ComboBox>
-                        <TextBox x:Name="SettingsCodexCookieHeaderBox" PlaceholderText="Codex cookie header (manual)"/>
-                    </StackPanel>
-                </Grid>
-            </ScrollViewer>
-        </ContentDialog>
+                            <TextBlock Text="Codex Provider" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,12,0,0"/>
+                            <CheckBox x:Name="SettingsCodexEnabledBox" Content="Enable Codex usage"/>
+                            <TextBlock Text="Codex source"/>
+                            <ComboBox x:Name="SettingsCodexSourceBox">
+                                <ComboBoxItem Content="Auto"/>
+                                <ComboBoxItem Content="OAuth"/>
+                                <ComboBoxItem Content="Web (Cookies)"/>
+                                <ComboBoxItem Content="CLI"/>
+                            </ComboBox>
+                            <TextBlock Text="Codex cookie source"/>
+                            <ComboBox x:Name="SettingsCodexCookieSourceBox">
+                                <ComboBoxItem Content="Auto"/>
+                                <ComboBoxItem Content="Manual"/>
+                            </ComboBox>
+                            <TextBox x:Name="SettingsCodexCookieHeaderBox" PlaceholderText="Codex cookie header (manual)"/>
+
+                            <TextBlock Text="Claude Code Provider" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,12,0,0"/>
+                            <CheckBox x:Name="SettingsClaudeEnabledBox" Content="Enable Claude Code usage"/>
+                            <TextBlock Text="Claude source"/>
+                            <ComboBox x:Name="SettingsClaudeSourceBox">
+                                <ComboBoxItem Content="Auto"/>
+                                <ComboBoxItem Content="OAuth"/>
+                                <ComboBoxItem Content="Web (Cookies)"/>
+                                <ComboBoxItem Content="CLI"/>
+                            </ComboBox>
+                            <TextBlock Text="Claude cookie source"/>
+                            <ComboBox x:Name="SettingsClaudeCookieSourceBox">
+                                <ComboBoxItem Content="Auto"/>
+                                <ComboBoxItem Content="Manual"/>
+                            </ComboBox>
+                            <TextBox x:Name="SettingsClaudeCookieHeaderBox" PlaceholderText="Claude cookie header (manual)"/>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </ContentDialog>
         </Grid>
     </ScrollViewer>
 </Window>

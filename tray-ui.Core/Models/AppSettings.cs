@@ -7,16 +7,19 @@ public class AppSettings
     public int RefreshMinutes { get; set; } = 5;
     public Dictionary<ProviderKind, ProviderSettings> Providers { get; set; } = new();
     public ProviderSettings Codex { get; set; } = ProviderSettings.CreateDefault(ProviderKind.Codex);
+    public ProviderSettings Claude { get; set; } = ProviderSettings.CreateDefault(ProviderKind.Claude);
 
     public static AppSettings CreateDefault()
     {
         var settings = new AppSettings
         {
-            Codex = ProviderSettings.CreateDefault(ProviderKind.Codex)
+            Codex = ProviderSettings.CreateDefault(ProviderKind.Codex),
+            Claude = ProviderSettings.CreateDefault(ProviderKind.Claude)
         };
         settings.Providers = new Dictionary<ProviderKind, ProviderSettings>
         {
-            [ProviderKind.Codex] = settings.Codex
+            [ProviderKind.Codex] = settings.Codex,
+            [ProviderKind.Claude] = settings.Claude
         };
         return settings;
     }
@@ -25,6 +28,7 @@ public class AppSettings
     {
         Providers ??= new Dictionary<ProviderKind, ProviderSettings>();
         Codex ??= ProviderSettings.CreateDefault(ProviderKind.Codex);
+        Claude ??= ProviderSettings.CreateDefault(ProviderKind.Claude);
 
         if (Providers.TryGetValue(ProviderKind.Codex, out var codexSettings) && codexSettings != null)
         {
@@ -33,6 +37,15 @@ public class AppSettings
         else
         {
             Providers[ProviderKind.Codex] = Codex;
+        }
+
+        if (Providers.TryGetValue(ProviderKind.Claude, out var claudeSettings) && claudeSettings != null)
+        {
+            Claude = claudeSettings;
+        }
+        else
+        {
+            Providers[ProviderKind.Claude] = Claude;
         }
 
         foreach (var provider in ProviderCatalog.SupportedProviders)

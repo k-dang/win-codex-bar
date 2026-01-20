@@ -6,7 +6,8 @@ namespace tray_ui.Models;
 public enum ProviderKind
 {
     Unknown = 0,
-    Codex = 1
+    Codex = 1,
+    Claude = 2
 }
 
 public sealed class UsageSummary
