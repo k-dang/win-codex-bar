@@ -73,11 +73,6 @@ public sealed partial class MainWindow : Window
         ViewModel.SelectedProviderFilter = filter;
     }
 
-    private void ClearDiagnostics_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.ClearDiagnostics();
-    }
-
     private async void SettingsDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var refreshValue = SettingsRefreshMinutesBox.Value;

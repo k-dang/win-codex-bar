@@ -14,7 +14,7 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-        <Grid x:Name="RootGrid" Padding="20" RowSpacing="16">
+        <Grid x:Name="RootGrid" Padding="16" RowSpacing="12">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -27,12 +27,12 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Spacing="4">
+                <StackPanel Spacing="2">
                     <TextBlock Text="Win Codex Bar" Style="{ThemeResource TitleTextBlockStyle}"/>
                     <TextBlock Text="Provider usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                     <Button Content="Settings" Click="Settings_Click"/>
                 </StackPanel>
             </Grid>
@@ -43,22 +43,21 @@
                 <SelectorBarItem x:Name="SelectorDiagnostics" Text="Diagnostics"/>
             </SelectorBar>
 
-            <Border x:Name="CodexPanel" Grid.Row="2" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel Spacing="12">
+            <Border x:Name="CodexPanel" Grid.Row="2" Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel Spacing="10">
                     <TextBlock Text="Codex usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <ItemsControl ItemsSource="{Binding CodexSnapshots}">
+                    <ItemsControl ItemsSource="{Binding CodexSnapshots}" Margin="0,4,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                    <Grid RowSpacing="10">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                <Grid RowSpacing="8" Margin="0,0,0,8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                        <Grid ColumnSpacing="12">
+                                        <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
@@ -67,8 +66,8 @@
                                             <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                         </Grid>
 
-                                        <StackPanel Grid.Row="1" Spacing="4">
-                                            <Grid ColumnSpacing="12">
+                                        <StackPanel Grid.Row="1" Spacing="3">
+                                            <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
@@ -79,14 +78,14 @@
                                                          Value="{Binding PrimaryPercent}"
                                                          IsIndeterminate="{Binding PrimaryIndeterminate}"
                                                          Maximum="100"
-                                                         Height="8"/>
+                                                         Height="6"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding PrimaryPercentText}"/>
                                             </Grid>
                                             <TextBlock Text="{Binding PrimaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="2" Spacing="4">
-                                            <Grid ColumnSpacing="12">
+                                        <StackPanel Grid.Row="2" Spacing="3">
+                                            <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
@@ -97,7 +96,7 @@
                                                          Value="{Binding SecondaryPercent}"
                                                          IsIndeterminate="{Binding SecondaryIndeterminate}"
                                                          Maximum="100"
-                                                         Height="8"/>
+                                                         Height="6"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding SecondaryPercentText}"/>
                                             </Grid>
                                             <TextBlock Text="{Binding SecondaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -108,30 +107,28 @@
                                             <TextBlock Text="{Binding CreditsText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
                                         </StackPanel>
-                                    </Grid>
-                                </Border>
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
             </Border>
 
-            <Border x:Name="ClaudePanel" Grid.Row="2" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="Collapsed">
-                <StackPanel Spacing="12">
+            <Border x:Name="ClaudePanel" Grid.Row="2" Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Visibility="Collapsed">
+                <StackPanel Spacing="10">
                     <TextBlock Text="Claude Code usage" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <ItemsControl ItemsSource="{Binding ClaudeSnapshots}">
+                    <ItemsControl ItemsSource="{Binding ClaudeSnapshots}" Margin="0,4,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                    <Grid RowSpacing="10">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                <Grid RowSpacing="8" Margin="0,0,0,8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                        <Grid ColumnSpacing="12">
+                                        <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
@@ -140,8 +137,8 @@
                                             <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                         </Grid>
 
-                                        <StackPanel Grid.Row="1" Spacing="4">
-                                            <Grid ColumnSpacing="12">
+                                        <StackPanel Grid.Row="1" Spacing="3">
+                                            <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
@@ -152,14 +149,14 @@
                                                          Value="{Binding PrimaryPercent}"
                                                          IsIndeterminate="{Binding PrimaryIndeterminate}"
                                                          Maximum="100"
-                                                         Height="8"/>
+                                                         Height="6"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding PrimaryPercentText}"/>
                                             </Grid>
                                             <TextBlock Text="{Binding PrimaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="2" Spacing="4">
-                                            <Grid ColumnSpacing="12">
+                                        <StackPanel Grid.Row="2" Spacing="3">
+                                            <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
@@ -170,7 +167,7 @@
                                                          Value="{Binding SecondaryPercent}"
                                                          IsIndeterminate="{Binding SecondaryIndeterminate}"
                                                          Maximum="100"
-                                                         Height="8"/>
+                                                         Height="6"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding SecondaryPercentText}"/>
                                             </Grid>
                                             <TextBlock Text="{Binding SecondaryReset}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -181,26 +178,24 @@
                                             <TextBlock Text="{Binding CreditsText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
                                         </StackPanel>
-                                    </Grid>
-                                </Border>
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
             </Border>
 
-            <Border x:Name="DiagnosticsPanel" Grid.Row="2" Padding="16" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="Collapsed">
-                <Grid RowSpacing="12">
+            <Border x:Name="DiagnosticsPanel" Grid.Row="2" Padding="12" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Visibility="Collapsed">
+                <Grid RowSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Grid ColumnSpacing="12">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Diagnostics log" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
@@ -209,17 +204,16 @@
                             <ComboBoxItem Content="Codex"/>
                             <ComboBoxItem Content="Claude"/>
                         </ComboBox>
-                        <Button Grid.Column="2" Content="Clear Logs" Click="ClearDiagnostics_Click"/>
                     </Grid>
 
-                    <Grid Grid.Row="1" ColumnSpacing="8">
+                    <Grid Grid.Row="1" ColumnSpacing="6">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="60"/>
-                            <ColumnDefinition Width="70"/>
-                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="56"/>
+                            <ColumnDefinition Width="64"/>
+                            <ColumnDefinition Width="56"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="56"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Timestamp" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         <TextBlock Grid.Column="1" Text="Provider" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -233,14 +227,14 @@
                         <ItemsControl ItemsSource="{Binding FilteredDiagnosticsEntries}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid ColumnSpacing="8" Padding="0,4">
+                                    <Grid ColumnSpacing="6" Padding="0,3">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="90"/>
-                                            <ColumnDefinition Width="60"/>
-                                            <ColumnDefinition Width="70"/>
-                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="56"/>
+                                            <ColumnDefinition Width="64"/>
+                                            <ColumnDefinition Width="56"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="56"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding TimestampText}" FontFamily="Consolas"/>
                                         <TextBlock Grid.Column="1" Text="{Binding ProviderName}"/>
@@ -266,12 +260,12 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
                     <Grid Padding="0"
-                      RowSpacing="12">
-                        <StackPanel Spacing="8">
+                      RowSpacing="8">
+                        <StackPanel Spacing="6">
                             <TextBlock Text="Refresh Interval (minutes)"/>
                             <NumberBox x:Name="SettingsRefreshMinutesBox" Minimum="1" Maximum="120" />
 
-                            <TextBlock Text="Codex Provider" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,12,0,0"/>
+                            <TextBlock Text="Codex Provider" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,10,0,0"/>
                             <CheckBox x:Name="SettingsCodexEnabledBox" Content="Enable Codex usage"/>
                             <TextBlock Text="Codex source"/>
                             <ComboBox x:Name="SettingsCodexSourceBox">
@@ -287,7 +281,7 @@
                             </ComboBox>
                             <TextBox x:Name="SettingsCodexCookieHeaderBox" PlaceholderText="Codex cookie header (manual)"/>
 
-                            <TextBlock Text="Claude Code Provider" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,12,0,0"/>
+                            <TextBlock Text="Claude Code Provider" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,10,0,0"/>
                             <CheckBox x:Name="SettingsClaudeEnabledBox" Content="Enable Claude Code usage"/>
                             <TextBlock Text="Claude source"/>
                             <ComboBox x:Name="SettingsClaudeSourceBox">

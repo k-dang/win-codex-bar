@@ -42,12 +42,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public void ClearDiagnostics()
-    {
-        DiagnosticsEntries.Clear();
-        FilteredDiagnosticsEntries.Clear();
-    }
-
     private void RefreshFilteredDiagnostics()
     {
         FilteredDiagnosticsEntries.Clear();
