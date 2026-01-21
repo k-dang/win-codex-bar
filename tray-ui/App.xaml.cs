@@ -52,12 +52,13 @@ public partial class App : Application
             };
         }
 
-        _ = _monitor.InitializeAsync();
-
         var hwnd = WindowNative.GetWindowHandle(_window);
         _trayService = new TrayService(hwnd);
         _trayService.OpenRequested += (_, _) => ShowMainWindow();
         _trayService.ExitRequested += (_, _) => ExitApplication();
+        _monitor.SummaryUpdated += (_, summary) => _trayService.UpdateUsageSummary(summary);
+
+        _ = _monitor.InitializeAsync();
     }
 
     private void ShowMainWindow()

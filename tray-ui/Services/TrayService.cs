@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
+using tray_ui.Models;
 
 namespace tray_ui.Services;
 
@@ -24,15 +27,19 @@ public sealed class TrayService : IDisposable
 
     private const uint MF_STRING = 0x0000;
     private const uint MF_SEPARATOR = 0x0800;
+    private const uint MF_GRAYED = 0x0001;
 
     private const int ID_OPEN = 1001;
     private const int ID_EXIT = 1002;
+    private const int ID_PROVIDER_START = 2000;
 
     private readonly IntPtr _hwnd;
     private readonly IntPtr _iconHandle;
     private readonly WndProc _wndProc;
     private readonly IntPtr _oldWndProc;
     private string _tooltip = "Win Codex Bar";
+    private IReadOnlyList<string> _providerMenuLines = Array.Empty<string>();
+    private readonly HashSet<int> _providerMenuIds = new();
     private bool _disposed;
 
     public event EventHandler? OpenRequested;
@@ -57,6 +64,20 @@ public sealed class TrayService : IDisposable
 
         _tooltip = text.Length <= 63 ? text : text[..63];
         ModifyTrayIcon();
+    }
+
+    public void UpdateUsageSummary(UsageSummary summary)
+    {
+        if (summary == null)
+        {
+            _providerMenuLines = Array.Empty<string>();
+            return;
+        }
+
+        _providerMenuLines = summary.ProviderSnapshots
+            .OrderBy(snapshot => snapshot.Provider)
+            .Select(FormatProviderLine)
+            .ToList();
     }
 
     public void Dispose()
@@ -133,6 +154,12 @@ public sealed class TrayService : IDisposable
         if (msg == WM_COMMAND)
         {
             var commandId = wParam.ToInt32() & 0xFFFF;
+            if (_providerMenuIds.Contains(commandId))
+            {
+                OpenRequested?.Invoke(this, EventArgs.Empty);
+                return IntPtr.Zero;
+            }
+
             switch (commandId)
             {
                 case ID_OPEN:
@@ -150,6 +177,23 @@ public sealed class TrayService : IDisposable
     private void ShowContextMenu()
     {
         var menu = CreatePopupMenu();
+        _providerMenuIds.Clear();
+        var nextId = ID_PROVIDER_START;
+        if (_providerMenuLines.Count == 0)
+        {
+            AppendMenu(menu, MF_STRING | MF_GRAYED, ID_PROVIDER_START, "No provider data");
+        }
+        else
+        {
+            foreach (var line in _providerMenuLines)
+            {
+                AppendMenu(menu, MF_STRING, nextId, line);
+                _providerMenuIds.Add(nextId);
+                nextId++;
+            }
+        }
+
+        AppendMenu(menu, MF_SEPARATOR, 0, string.Empty);
         AppendMenu(menu, MF_STRING, ID_OPEN, "Open");
         AppendMenu(menu, MF_SEPARATOR, 0, string.Empty);
         AppendMenu(menu, MF_STRING, ID_EXIT, "Exit");
@@ -163,6 +207,26 @@ public sealed class TrayService : IDisposable
         }
 
         DestroyMenu(menu);
+    }
+
+    private static string FormatProviderLine(ProviderUsageSnapshot snapshot)
+    {
+        if (!string.IsNullOrWhiteSpace(snapshot.Error))
+        {
+            return $"{snapshot.Provider}: {snapshot.Error}";
+        }
+
+        var primaryLabel = snapshot.Primary?.Label ?? "Session";
+        var secondaryLabel = snapshot.Secondary?.Label ?? "Weekly";
+        var primaryPercent = FormatPercent(snapshot.Primary?.UsedPercent);
+        var secondaryPercent = FormatPercent(snapshot.Secondary?.UsedPercent);
+
+        return $"{snapshot.Provider}: {primaryPercent} {primaryLabel}, {secondaryPercent} {secondaryLabel}";
+    }
+
+    private static string FormatPercent(double? value)
+    {
+        return value.HasValue ? $"{value.Value:0}%" : "--%";
     }
 
     private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
