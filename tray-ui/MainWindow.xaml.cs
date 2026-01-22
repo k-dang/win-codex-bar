@@ -1,8 +1,10 @@
 using System;
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using tray_ui.Models;
 using tray_ui.Services;
 using tray_ui.ViewModels;
 using WinRT.Interop;
@@ -11,9 +13,14 @@ namespace tray_ui;
 
 public sealed partial class MainWindow : Window
 {
+    private const int DefaultWindowWidth = 900;
+    private const int MinWindowHeight = 420;
+    private const int MaxWindowHeight = 720;
+    private const int WindowChromeHeight = 48;
     private readonly UsageMonitor _monitor;
     private AppWindow? _appWindow;
     private bool _allowClose;
+    private bool _resizePending;
 
     public MainViewModel ViewModel { get; } = new();
 
@@ -23,12 +30,13 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
 
         ExtendsContentIntoTitleBar = false;
-        SetInitialWindowSize(900, 600);
+        SetInitialWindowSize(DefaultWindowWidth, 600);
         InitializeWindowEvents();
+        RootGrid.Loaded += MainWindow_Loaded;
 
         RootGrid.DataContext = ViewModel;
         ViewModel.Update(_monitor.Summary);
-        _monitor.SummaryUpdated += (_, summary) => ViewModel.Update(summary);
+        _monitor.SummaryUpdated += OnSummaryUpdated;
     }
 
     public void ShowWindow()
@@ -55,11 +63,26 @@ public sealed partial class MainWindow : Window
         await SettingsDialog.ShowAsync();
     }
 
+    private void OnSummaryUpdated(object? sender, UsageSummary summary)
+    {
+        ViewModel.Update(summary);
+        ScheduleResizeToContentHeight();
+    }
+
+    private async void RetryProvider_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is ProviderKind provider)
+        {
+            await _monitor.RefreshProviderAsync(provider);
+        }
+    }
+
     private void ProviderSelector_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         CodexPanel.Visibility = sender.SelectedItem == SelectorCodex ? Visibility.Visible : Visibility.Collapsed;
         ClaudePanel.Visibility = sender.SelectedItem == SelectorClaude ? Visibility.Visible : Visibility.Collapsed;
         DiagnosticsPanel.Visibility = sender.SelectedItem == SelectorDiagnostics ? Visibility.Visible : Visibility.Collapsed;
+        ScheduleResizeToContentHeight();
     }
 
     private void DiagnosticsFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -191,6 +214,49 @@ public sealed partial class MainWindow : Window
         }
         catch
         {
+        }
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        ScheduleResizeToContentHeight();
+    }
+
+    private void ScheduleResizeToContentHeight()
+    {
+        if (_resizePending)
+        {
+            return;
+        }
+
+        _resizePending = true;
+        _ = DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            _resizePending = false;
+            ResizeToContentHeight();
+        });
+    }
+
+    private void ResizeToContentHeight()
+    {
+        if (_appWindow == null)
+        {
+            return;
+        }
+
+        var targetWidth = _appWindow.Size.Width;
+        if (targetWidth <= 0)
+        {
+            targetWidth = DefaultWindowWidth;
+        }
+
+        RootGrid.Measure(new Windows.Foundation.Size(targetWidth, double.PositiveInfinity));
+        var desiredHeight = RootGrid.DesiredSize.Height + WindowChromeHeight;
+        var clampedHeight = Math.Clamp((int)Math.Round(desiredHeight), MinWindowHeight, MaxWindowHeight);
+
+        if (clampedHeight != _appWindow.Size.Height)
+        {
+            _appWindow.Resize(new Windows.Graphics.SizeInt32 { Width = targetWidth, Height = clampedHeight });
         }
     }
 }

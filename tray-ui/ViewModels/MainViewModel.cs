@@ -98,6 +98,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
 public sealed class ProviderUsageRow
 {
+    public ProviderKind ProviderKind { get; init; }
     public string ProviderName { get; init; } = string.Empty;
     public string SourceLabel { get; init; } = string.Empty;
     public string? AccountLabel { get; init; }
@@ -113,6 +114,7 @@ public sealed class ProviderUsageRow
     public string SecondaryReset { get; init; } = string.Empty;
     public string? CreditsText { get; init; }
     public string? ErrorText { get; init; }
+    public bool HasError { get; init; }
 
     public static ProviderUsageRow FromSnapshot(ProviderUsageSnapshot snapshot)
     {
@@ -124,6 +126,7 @@ public sealed class ProviderUsageRow
 
         return new ProviderUsageRow
         {
+            ProviderKind = snapshot.Provider,
             ProviderName = snapshot.Provider.ToString(),
             SourceLabel = snapshot.SourceLabel,
             AccountLabel = account,
@@ -138,7 +141,8 @@ public sealed class ProviderUsageRow
             SecondaryPercentText = FormatPercent(secondary?.UsedPercent),
             SecondaryReset = secondary?.ResetDescription ?? string.Empty,
             CreditsText = snapshot.CreditsText,
-            ErrorText = snapshot.Error
+            ErrorText = snapshot.Error,
+            HasError = !string.IsNullOrWhiteSpace(snapshot.Error)
         };
     }
 

@@ -79,6 +79,54 @@ public sealed class ProviderUsageService
 
         return snapshots;
     }
+
+    public async Task<ProviderUsageSnapshot?> FetchProviderAsync(
+        AppSettings settings,
+        ProviderKind provider,
+        CancellationToken cancellationToken = default)
+    {
+        var providerSettings = settings.GetProviderSettings(provider);
+        if (!providerSettings.Enabled)
+        {
+            return null;
+        }
+
+        _logger?.LogRefreshStarted();
+        var refreshStopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            if (!_fetchers.TryGetValue(provider, out var fetcher))
+            {
+                return new ProviderUsageSnapshot
+                {
+                    Provider = provider,
+                    SourceLabel = "auto",
+                    Error = "No provider fetcher configured.",
+                    UpdatedAt = DateTimeOffset.Now
+                };
+            }
+
+            var snapshot = await fetcher.FetchAsync(settings, providerSettings, cancellationToken);
+            if (snapshot != null)
+            {
+                return snapshot;
+            }
+
+            return new ProviderUsageSnapshot
+            {
+                Provider = provider,
+                SourceLabel = "auto",
+                Error = $"No {provider} usage sources available.",
+                UpdatedAt = DateTimeOffset.Now
+            };
+        }
+        finally
+        {
+            refreshStopwatch.Stop();
+            _logger?.LogRefreshCompleted(refreshStopwatch.Elapsed);
+        }
+    }
 }
 
 internal sealed class CodexOAuthCredentials

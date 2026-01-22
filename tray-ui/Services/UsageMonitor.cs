@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.UI.Dispatching;
 using tray_ui.Models;
 
@@ -50,6 +51,29 @@ public sealed class UsageMonitor
             LastUpdated = DateTimeOffset.Now
         };
         summary.ProviderSnapshots.AddRange(providerSnapshots);
+        Summary = summary;
+        _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, Summary));
+    }
+
+    public async Task RefreshProviderAsync(ProviderKind provider)
+    {
+        var snapshot = await _providerUsageService.FetchProviderAsync(_settings, provider);
+        if (snapshot == null)
+        {
+            return;
+        }
+
+        var summary = new UsageSummary
+        {
+            LastUpdated = DateTimeOffset.Now
+        };
+
+        foreach (var existing in Summary.ProviderSnapshots.Where(item => item.Provider != provider))
+        {
+            summary.ProviderSnapshots.Add(existing);
+        }
+
+        summary.ProviderSnapshots.Add(snapshot);
         Summary = summary;
         _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, Summary));
     }
