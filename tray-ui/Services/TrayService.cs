@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Runtime.InteropServices;
 using tray_ui.Models;
+using Windows.ApplicationModel;
 
 namespace tray_ui.Services;
 
@@ -22,6 +24,9 @@ public sealed class TrayService : IDisposable
     private const int NIF_ICON = 0x00000002;
     private const int NIF_TIP = 0x00000004;
 
+    private const uint IMAGE_ICON = 1;
+    private const uint LR_LOADFROMFILE = 0x0010;
+
     private const uint TPM_RIGHTBUTTON = 0x0002;
     private const uint TPM_RETURNCMD = 0x0100;
 
@@ -35,6 +40,7 @@ public sealed class TrayService : IDisposable
 
     private readonly IntPtr _hwnd;
     private readonly IntPtr _iconHandle;
+    private readonly bool _ownsIconHandle;
     private readonly WndProc _wndProc;
     private readonly IntPtr _oldWndProc;
     private string _tooltip = "Win Codex Bar";
@@ -48,7 +54,7 @@ public sealed class TrayService : IDisposable
     public TrayService(IntPtr hwnd)
     {
         _hwnd = hwnd;
-        _iconHandle = LoadIcon(IntPtr.Zero, new IntPtr(0x7F00));
+        _iconHandle = LoadTrayIcon(out _ownsIconHandle);
         _wndProc = WindowProc;
         _oldWndProc = SetWindowLongPtr(_hwnd, GWL_WNDPROC, Marshal.GetFunctionPointerForDelegate(_wndProc));
 
@@ -89,6 +95,10 @@ public sealed class TrayService : IDisposable
 
         _disposed = true;
         RemoveTrayIcon();
+        if (_ownsIconHandle && _iconHandle != IntPtr.Zero)
+        {
+            DestroyIcon(_iconHandle);
+        }
         SetWindowLongPtr(_hwnd, GWL_WNDPROC, _oldWndProc);
     }
 
@@ -229,6 +239,20 @@ public sealed class TrayService : IDisposable
         return value.HasValue ? $"{value.Value:0}%" : "--%";
     }
 
+    private static IntPtr LoadTrayIcon(out bool ownsHandle)
+    {
+        var iconPath = Path.Combine(Package.Current.InstalledLocation.Path, "Assets", "TrayIcon.ico");
+        var handle = LoadImage(IntPtr.Zero, iconPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+        if (handle != IntPtr.Zero)
+        {
+            ownsHandle = true;
+            return handle;
+        }
+
+        ownsHandle = false;
+        return LoadIcon(IntPtr.Zero, new IntPtr(0x7F00));
+    }
+
     private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -262,6 +286,12 @@ public sealed class TrayService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadImage(IntPtr hInstance, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 
     [DllImport("user32.dll")]
     private static extern IntPtr CreatePopupMenu();
