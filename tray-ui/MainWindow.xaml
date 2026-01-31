@@ -304,56 +304,6 @@
                     </Grid>
                 </Border>
 
-                <ContentDialog x:Name="SettingsDialog"
-                               Grid.RowSpan="3"
-                               Title="Settings"
-                               PrimaryButtonText="Save"
-                               SecondaryButtonText="Cancel"
-                               DefaultButton="Primary"
-                               PrimaryButtonClick="SettingsDialog_PrimaryButtonClick">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled">
-                        <Grid Padding="0"
-                              RowSpacing="8">
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="Refresh Interval (minutes)"/>
-                                <NumberBox x:Name="SettingsRefreshMinutesBox" Minimum="1" Maximum="120" />
-
-                                <TextBlock Text="Codex Provider" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,10,0,0"/>
-                                <CheckBox x:Name="SettingsCodexEnabledBox" Content="Enable Codex usage"/>
-                                <TextBlock Text="Codex source"/>
-                                <ComboBox x:Name="SettingsCodexSourceBox">
-                                    <ComboBoxItem Content="Auto"/>
-                                    <ComboBoxItem Content="OAuth"/>
-                                    <ComboBoxItem Content="Web (Cookies)"/>
-                                    <ComboBoxItem Content="CLI"/>
-                                </ComboBox>
-                                <TextBlock Text="Codex cookie source"/>
-                                <ComboBox x:Name="SettingsCodexCookieSourceBox">
-                                    <ComboBoxItem Content="Auto"/>
-                                    <ComboBoxItem Content="Manual"/>
-                                </ComboBox>
-                                <TextBox x:Name="SettingsCodexCookieHeaderBox" PlaceholderText="Codex cookie header (manual)"/>
-
-                                <TextBlock Text="Claude Code Provider" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,10,0,0"/>
-                                <CheckBox x:Name="SettingsClaudeEnabledBox" Content="Enable Claude Code usage"/>
-                                <TextBlock Text="Claude source"/>
-                                <ComboBox x:Name="SettingsClaudeSourceBox">
-                                    <ComboBoxItem Content="Auto"/>
-                                    <ComboBoxItem Content="OAuth"/>
-                                    <ComboBoxItem Content="Web (Cookies)"/>
-                                    <ComboBoxItem Content="CLI"/>
-                                </ComboBox>
-                                <TextBlock Text="Claude cookie source"/>
-                                <ComboBox x:Name="SettingsClaudeCookieSourceBox">
-                                    <ComboBoxItem Content="Auto"/>
-                                    <ComboBoxItem Content="Manual"/>
-                                </ComboBox>
-                                <TextBox x:Name="SettingsClaudeCookieHeaderBox" PlaceholderText="Claude cookie header (manual)"/>
-                            </StackPanel>
-                        </Grid>
-                    </ScrollViewer>
-                </ContentDialog>
             </Grid>
         </ScrollViewer>
     </Grid>

@@ -18,6 +18,7 @@ namespace tray_ui;
 public sealed partial class MainWindow : Window
 {
     private const int DefaultWindowWidth = 420;
+    private const int DefaultWindowHeight = 500;
     private const int MinWindowHeight = 420;
     private const int MaxWindowHeight = 720;
     private const int WindowChromeHeight = 8;
@@ -28,6 +29,7 @@ public sealed partial class MainWindow : Window
     private bool _resizePending;
     private DesktopAcrylicController? _acrylicController;
     private SystemBackdropConfiguration? _backdropConfiguration;
+    private SettingsWindow? _settingsWindow;
 
     public MainViewModel ViewModel { get; } = new();
 
@@ -38,7 +40,7 @@ public sealed partial class MainWindow : Window
 
         InitializeWindowEvents();
         ConfigureCustomTitleBar();
-        SetInitialWindowSize(DefaultWindowWidth, 600);
+        SetInitialWindowSize(DefaultWindowWidth, DefaultWindowHeight);
         RootGrid.Loaded += MainWindow_Loaded;
         RootGrid.ActualThemeChanged += RootGrid_ActualThemeChanged;
         Activated += MainWindow_Activated;
@@ -70,11 +72,15 @@ public sealed partial class MainWindow : Window
         Close();
     }
 
-    private async void Settings_Click(object sender, RoutedEventArgs e)
+    private void Settings_Click(object sender, RoutedEventArgs e)
     {
-        LoadSettings();
-        SettingsDialog.XamlRoot = RootGrid.XamlRoot;
-        await SettingsDialog.ShowAsync();
+        if (_settingsWindow == null)
+        {
+            _settingsWindow = new SettingsWindow(_monitor, this);
+            _settingsWindow.Closed += SettingsWindow_Closed;
+        }
+
+        _settingsWindow.Activate();
     }
 
     private void OnSummaryUpdated(object? sender, UsageSummary summary)
@@ -110,85 +116,13 @@ public sealed partial class MainWindow : Window
         ViewModel.SelectedProviderFilter = filter;
     }
 
-    private async void SettingsDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private void SettingsWindow_Closed(object sender, WindowEventArgs args)
     {
-        var refreshValue = SettingsRefreshMinutesBox.Value;
-        if (double.IsNaN(refreshValue) || refreshValue <= 0)
+        if (_settingsWindow != null)
         {
-            refreshValue = 5;
+            _settingsWindow.Closed -= SettingsWindow_Closed;
+            _settingsWindow = null;
         }
-
-        var codexSettings = new Models.ProviderSettings
-        {
-            Enabled = SettingsCodexEnabledBox.IsChecked == true,
-            SourceMode = ParseSourceMode(SettingsCodexSourceBox.SelectedIndex),
-            CookieSource = ParseCookieSource(SettingsCodexCookieSourceBox.SelectedIndex),
-            CookieHeader = SettingsCodexCookieHeaderBox.Text?.Trim()
-        };
-
-        var claudeSettings = new Models.ProviderSettings
-        {
-            Enabled = SettingsClaudeEnabledBox.IsChecked == true,
-            SourceMode = ParseSourceMode(SettingsClaudeSourceBox.SelectedIndex),
-            CookieSource = ParseCookieSource(SettingsClaudeCookieSourceBox.SelectedIndex),
-            CookieHeader = SettingsClaudeCookieHeaderBox.Text?.Trim()
-        };
-
-        var settings = new Models.AppSettings
-        {
-            RefreshMinutes = (int)Math.Max(1, refreshValue),
-            Codex = codexSettings,
-            Claude = claudeSettings
-        };
-
-        await _monitor.SaveSettingsAsync(settings);
-    }
-
-    private void LoadSettings()
-    {
-        SettingsRefreshMinutesBox.Value = _monitor.Settings.RefreshMinutes;
-
-        SettingsCodexEnabledBox.IsChecked = _monitor.Settings.Codex.Enabled;
-        SettingsCodexSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Codex.SourceMode);
-        SettingsCodexCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Codex.CookieSource);
-        SettingsCodexCookieHeaderBox.Text = _monitor.Settings.Codex.CookieHeader ?? string.Empty;
-
-        SettingsClaudeEnabledBox.IsChecked = _monitor.Settings.Claude.Enabled;
-        SettingsClaudeSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Claude.SourceMode);
-        SettingsClaudeCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Claude.CookieSource);
-        SettingsClaudeCookieHeaderBox.Text = _monitor.Settings.Claude.CookieHeader ?? string.Empty;
-    }
-
-    private static Models.ProviderSourceMode ParseSourceMode(int selectedIndex)
-    {
-        return selectedIndex switch
-        {
-            1 => Models.ProviderSourceMode.OAuth,
-            2 => Models.ProviderSourceMode.Web,
-            3 => Models.ProviderSourceMode.Cli,
-            _ => Models.ProviderSourceMode.Auto
-        };
-    }
-
-    private static int SourceIndex(Models.ProviderSourceMode mode)
-    {
-        return mode switch
-        {
-            Models.ProviderSourceMode.OAuth => 1,
-            Models.ProviderSourceMode.Web => 2,
-            Models.ProviderSourceMode.Cli => 3,
-            _ => 0
-        };
-    }
-
-    private static Models.CookieSourceMode ParseCookieSource(int selectedIndex)
-    {
-        return selectedIndex == 1 ? Models.CookieSourceMode.Manual : Models.CookieSourceMode.Auto;
-    }
-
-    private static int CookieIndex(Models.CookieSourceMode mode)
-    {
-        return mode == Models.CookieSourceMode.Manual ? 1 : 0;
     }
 
 
