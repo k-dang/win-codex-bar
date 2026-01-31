@@ -57,18 +57,33 @@ public sealed class ProviderUsageService
                 continue;
             }
 
-            var snapshot = await fetcher.FetchAsync(settings, providerSettings, cancellationToken);
-            if (snapshot != null)
+            try
             {
-                snapshots.Add(snapshot);
+                var snapshot = await fetcher.FetchAsync(settings, providerSettings, cancellationToken);
+                if (snapshot != null)
+                {
+                    snapshots.Add(snapshot);
+                }
+                else
+                {
+                    snapshots.Add(new ProviderUsageSnapshot
+                    {
+                        Provider = provider,
+                        SourceLabel = "auto",
+                        Error = $"No {provider} usage sources available.",
+                        UpdatedAt = DateTimeOffset.Now
+                    });
+                }
             }
-            else
+            catch (Exception ex)
             {
                 snapshots.Add(new ProviderUsageSnapshot
                 {
                     Provider = provider,
                     SourceLabel = "auto",
-                    Error = $"No {provider} usage sources available.",
+                    Error = string.IsNullOrWhiteSpace(ex.Message)
+                        ? $"Failed to fetch {provider} usage."
+                        : ex.Message,
                     UpdatedAt = DateTimeOffset.Now
                 });
             }
@@ -107,19 +122,34 @@ public sealed class ProviderUsageService
                 };
             }
 
-            var snapshot = await fetcher.FetchAsync(settings, providerSettings, cancellationToken);
-            if (snapshot != null)
+            try
             {
-                return snapshot;
-            }
+                var snapshot = await fetcher.FetchAsync(settings, providerSettings, cancellationToken);
+                if (snapshot != null)
+                {
+                    return snapshot;
+                }
 
-            return new ProviderUsageSnapshot
+                return new ProviderUsageSnapshot
+                {
+                    Provider = provider,
+                    SourceLabel = "auto",
+                    Error = $"No {provider} usage sources available.",
+                    UpdatedAt = DateTimeOffset.Now
+                };
+            }
+            catch (Exception ex)
             {
-                Provider = provider,
-                SourceLabel = "auto",
-                Error = $"No {provider} usage sources available.",
-                UpdatedAt = DateTimeOffset.Now
-            };
+                return new ProviderUsageSnapshot
+                {
+                    Provider = provider,
+                    SourceLabel = "auto",
+                    Error = string.IsNullOrWhiteSpace(ex.Message)
+                        ? $"Failed to fetch {provider} usage."
+                        : ex.Message,
+                    UpdatedAt = DateTimeOffset.Now
+                };
+            }
         }
         finally
         {
