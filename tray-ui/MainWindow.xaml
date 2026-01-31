@@ -101,7 +101,7 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding ProviderName}" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                                            <TextBlock Text="{Binding ProviderName}" Style="{StaticResource AppPrimarySubtitleTextStyle}"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Style="{StaticResource AppSubtleTextStyle}"/>
                                         </Grid>
 
@@ -177,7 +177,7 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding ProviderName}" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                                            <TextBlock Text="{Binding ProviderName}" Style="{StaticResource AppPrimarySubtitleTextStyle}"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Style="{StaticResource AppSubtleTextStyle}"/>
                                         </Grid>
 
