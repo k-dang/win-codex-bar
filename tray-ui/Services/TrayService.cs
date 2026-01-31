@@ -241,7 +241,7 @@ public sealed class TrayService : IDisposable
 
     private static IntPtr LoadTrayIcon(out bool ownsHandle)
     {
-        var iconPath = Path.Combine(Package.Current.InstalledLocation.Path, "Assets", "TrayIcon.ico");
+        var iconPath = GetTrayIconPath();
         var handle = LoadImage(IntPtr.Zero, iconPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
         if (handle != IntPtr.Zero)
         {
@@ -251,6 +251,18 @@ public sealed class TrayService : IDisposable
 
         ownsHandle = false;
         return LoadIcon(IntPtr.Zero, new IntPtr(0x7F00));
+    }
+
+    private static string GetTrayIconPath()
+    {
+        try
+        {
+            return Path.Combine(Package.Current.InstalledLocation.Path, "Assets", "TrayIcon.ico");
+        }
+        catch (Exception)
+        {
+            return Path.Combine(AppContext.BaseDirectory, "Assets", "TrayIcon.ico");
+        }
     }
 
     private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
