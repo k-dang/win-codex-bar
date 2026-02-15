@@ -5,6 +5,12 @@
 
 Win Codex Bar is a WinUI 3 desktop tray app for monitoring Codex and Claude Code usage. It shows usage windows, reset timelines, and diagnostics from OAuth, web-cookie, or CLI sources.
 
+## Screenshot
+
+<p align="center">
+  <img src="images/ss.png" alt="Win Codex Bar screenshot" width="420" />
+</p>
+
 ## Features
 
 - Tray + window UI for Codex and Claude usage snapshots.
