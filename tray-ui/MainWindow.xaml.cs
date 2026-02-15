@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI;
@@ -134,6 +135,22 @@ public sealed partial class MainWindow : Window
         if (_appWindow != null)
         {
             _appWindow.Closing += AppWindow_Closing;
+            TrySetWindowIcon(_appWindow);
+        }
+    }
+
+    private static void TrySetWindowIcon(AppWindow appWindow)
+    {
+        try
+        {
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "TrayIcon.ico");
+            if (File.Exists(iconPath))
+            {
+                appWindow.SetIcon(iconPath);
+            }
+        }
+        catch
+        {
         }
     }
 

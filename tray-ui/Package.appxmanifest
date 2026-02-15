@@ -15,7 +15,7 @@
   <mp:PhoneIdentity PhoneProductId="44ea3f80-2dd4-459d-bf1e-2c0ae41fc130" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>tray-ui</DisplayName>
+    <DisplayName>win-codex-bar</DisplayName>
     <PublisherDisplayName>kevin</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -34,7 +34,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="WinCodexBar"
+        DisplayName="win-codex-bar"
         Description="Windows CodexBar"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
