@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI;
@@ -16,7 +17,7 @@ using WinRT.Interop;
 
 namespace tray_ui;
 
-public sealed partial class MainWindow : Window
+public sealed partial class MainWindow
 {
     private const int DefaultWindowWidth = 420;
     private const int DefaultWindowHeight = 500;
@@ -92,7 +93,7 @@ public sealed partial class MainWindow : Window
 
     private async void RetryProvider_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button button && button.Tag is ProviderKind provider)
+        if (sender is Button { Tag: ProviderKind provider })
         {
             await _monitor.RefreshProviderAsync(provider);
         }
@@ -151,6 +152,7 @@ public sealed partial class MainWindow : Window
         }
         catch
         {
+            // ignored
         }
     }
 
@@ -237,6 +239,7 @@ public sealed partial class MainWindow : Window
         }
         catch
         {
+            // ignored
         }
     }
 
@@ -281,11 +284,11 @@ public sealed partial class MainWindow : Window
         UpdateTitleBarStyle(sender.ActualTheme);
     }
 
-    private bool TrySetThinAcrylicBackdrop()
+    private void TrySetThinAcrylicBackdrop()
     {
         if (!DesktopAcrylicController.IsSupported())
         {
-            return false;
+            return;
         }
 
         _backdropConfiguration = new SystemBackdropConfiguration
@@ -301,7 +304,6 @@ public sealed partial class MainWindow : Window
 
         _acrylicController.AddSystemBackdropTarget(this.As<ICompositionSupportsSystemBackdrop>());
         _acrylicController.SetSystemBackdropConfiguration(_backdropConfiguration);
-        return true;
     }
 
     private static SystemBackdropTheme MapTheme(ElementTheme theme)
