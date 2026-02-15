@@ -1,7 +1,6 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using WinCodexBar.Core.Services;
-using WinCodexBar.Core.Models;
 using WinCodexBar.UI.Services;
 using WinRT.Interop;
 
@@ -13,7 +12,7 @@ namespace WinCodexBar.UI;
 /// <summary>
 /// Provides application-specific behavior to supplement the default Application class.
 /// </summary>
-public partial class App : Application
+public partial class App
 {
     private Window? _window;
     private TrayService? _trayService;
@@ -33,7 +32,7 @@ public partial class App : Application
     /// Invoked when the application is launched.
     /// </summary>
     /// <param name="args">Details about the launch request and process.</param>
-    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         var dispatcher = DispatcherQueue.GetForCurrentThread();
         var settingsStore = new SettingsStore();

@@ -6,7 +6,7 @@ using WinCodexBar.UI.Services;
 
 namespace WinCodexBar.UI;
 
-public sealed partial class SettingsPage : Page
+public sealed partial class SettingsPage
 {
     private readonly UsageMonitor _monitor;
     public event EventHandler? CloseRequested;

@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Net.Http;
-
 namespace WinCodexBar.Core.Services;
 
 internal static class ProviderFetcherFactory

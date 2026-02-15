@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.Core.Services;

@@ -40,7 +40,7 @@ public sealed class SettingsWindow : Window
         UpdateTitleBarStyle(_page.RootElement.ActualTheme);
     }
 
-    private void Page_CloseRequested(object? sender, System.EventArgs e)
+    private void Page_CloseRequested(object? sender, EventArgs e)
     {
         _page.CloseRequested -= Page_CloseRequested;
         Close();
@@ -159,6 +159,7 @@ public sealed class SettingsWindow : Window
         }
         catch
         {
+            // ignored
         }
     }
 
@@ -193,11 +194,11 @@ public sealed class SettingsWindow : Window
         _appWindow.Move(new Windows.Graphics.PointInt32(x, y));
     }
 
-    private bool TrySetThinAcrylicBackdrop()
+    private void TrySetThinAcrylicBackdrop()
     {
         if (!DesktopAcrylicController.IsSupported())
         {
-            return false;
+            return;
         }
 
         _backdropConfiguration = new SystemBackdropConfiguration
@@ -213,7 +214,6 @@ public sealed class SettingsWindow : Window
 
         _acrylicController.AddSystemBackdropTarget(this.As<ICompositionSupportsSystemBackdrop>());
         _acrylicController.SetSystemBackdropConfiguration(_backdropConfiguration);
-        return true;
     }
 
     private static SystemBackdropTheme MapTheme(ElementTheme theme)

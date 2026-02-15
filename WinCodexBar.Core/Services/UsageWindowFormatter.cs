@@ -1,5 +1,3 @@
-using System;
-
 namespace WinCodexBar.Core.Services;
 
 public static class UsageWindowFormatter

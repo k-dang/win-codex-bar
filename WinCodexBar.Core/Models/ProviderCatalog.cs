@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace WinCodexBar.Core.Models;
 
 public static class ProviderCatalog

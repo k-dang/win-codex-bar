@@ -1,6 +1,4 @@
-using System;
 using WinCodexBar.Core.Services;
-using Xunit;
 
 namespace WinCodexBar.Tests;
 

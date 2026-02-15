@@ -1,5 +1,3 @@
-using System;
-
 namespace WinCodexBar.Core.Models;
 
 public enum ProviderSourceMode

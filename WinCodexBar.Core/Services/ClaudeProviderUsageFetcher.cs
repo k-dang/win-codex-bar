@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.Core.Services;
@@ -26,8 +21,6 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
         ProviderSettings providerSettings,
         CancellationToken cancellationToken)
     {
-        providerSettings ??= ProviderSettings.CreateDefault(ProviderKind.Claude);
-
         var errors = new List<string>();
         var sources = ResolveSourceOrder(providerSettings.SourceMode);
 
@@ -145,14 +138,16 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
                 ResetsAt = usage.SessionResetsAt,
                 ResetDescription = UsageWindowFormatter.FormatResetDescription(usage.SessionResetsAt)
             },
-            Secondary = usage.WeeklyPercentUsed.HasValue ? new UsageWindow
-            {
-                Label = "Weekly",
-                UsedPercent = usage.WeeklyPercentUsed,
-                WindowMinutes = 7 * 24 * 60,
-                ResetsAt = usage.WeeklyResetsAt,
-                ResetDescription = UsageWindowFormatter.FormatResetDescription(usage.WeeklyResetsAt)
-            } : null,
+            Secondary = usage.WeeklyPercentUsed.HasValue
+                ? new UsageWindow
+                {
+                    Label = "Weekly",
+                    UsedPercent = usage.WeeklyPercentUsed,
+                    WindowMinutes = 7 * 24 * 60,
+                    ResetsAt = usage.WeeklyResetsAt,
+                    ResetDescription = UsageWindowFormatter.FormatResetDescription(usage.WeeklyResetsAt)
+                }
+                : null,
             CreditsText = usage.ExtraUsageText,
             UpdatedAt = DateTimeOffset.Now
         };
@@ -195,5 +190,3 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
         };
     }
 }
-
-

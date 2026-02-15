@@ -74,9 +74,9 @@ public sealed class TrayService : IDisposable
 
     public void UpdateUsageSummary(UsageSummary summary)
     {
-        if (summary == null)
+        if (summary.ProviderSnapshots.Count == 0)
         {
-            _providerMenuLines = Array.Empty<string>();
+            _providerMenuLines = [];
             return;
         }
 

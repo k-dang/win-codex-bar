@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.Core.Services;

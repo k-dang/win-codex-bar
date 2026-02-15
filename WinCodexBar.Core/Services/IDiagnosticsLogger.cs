@@ -1,4 +1,3 @@
-using System;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.Core.Services;

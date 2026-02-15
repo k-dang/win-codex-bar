@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.Core.Services;
@@ -26,8 +21,6 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
         ProviderSettings providerSettings,
         CancellationToken cancellationToken)
     {
-        providerSettings ??= ProviderSettings.CreateDefault(ProviderKind.Codex);
-
         var errors = new List<string>();
         var sources = ResolveSourceOrder(providerSettings.SourceMode);
 

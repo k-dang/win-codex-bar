@@ -1,33 +1,25 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.Core.Services;
 
 public sealed class ProviderUsageService
 {
-    private readonly HttpClient _httpClient;
     private readonly IReadOnlyDictionary<ProviderKind, IProviderUsageFetcher> _fetchers;
     private readonly IDiagnosticsLogger? _logger;
 
     public ProviderUsageService(HttpClient? httpClient = null, IEnumerable<IProviderUsageFetcher>? fetchers = null, IDiagnosticsLogger? logger = null)
     {
-        _httpClient = httpClient ?? new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        HttpClient httpClient1 = httpClient ?? new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         _logger = logger;
         var configured = fetchers?.ToList()
-            ?? ProviderFetcherFactory.CreateDefault(_httpClient, logger).ToList();
+            ?? ProviderFetcherFactory.CreateDefault(httpClient1, logger).ToList();
         _fetchers = configured.ToDictionary(fetcher => fetcher.Kind);
     }
 
@@ -994,6 +986,7 @@ internal sealed class JsonRpcProcessClient : IDisposable
         }
         catch
         {
+            // ignored
         }
     }
 }
@@ -1500,18 +1493,16 @@ internal static class ProcessRunner
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
-        using var process = new Process
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = arguments,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
         };
 
         if (!process.Start())
@@ -1546,6 +1537,7 @@ internal static class ProcessRunner
         }
         catch
         {
+            // ignored
         }
 
         var stderr = await process.StandardError.ReadToEndAsync();

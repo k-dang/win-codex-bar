@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace WinCodexBar.Core.Models;
 
 public class AppSettings
@@ -26,11 +24,7 @@ public class AppSettings
 
     public void NormalizeProviders()
     {
-        Providers ??= new Dictionary<ProviderKind, ProviderSettings>();
-        Codex ??= ProviderSettings.CreateDefault(ProviderKind.Codex);
-        Claude ??= ProviderSettings.CreateDefault(ProviderKind.Claude);
-
-        if (Providers.TryGetValue(ProviderKind.Codex, out var codexSettings) && codexSettings != null)
+        if (Providers.TryGetValue(ProviderKind.Codex, out ProviderSettings? codexSettings))
         {
             Codex = codexSettings;
         }
@@ -39,7 +33,7 @@ public class AppSettings
             Providers[ProviderKind.Codex] = Codex;
         }
 
-        if (Providers.TryGetValue(ProviderKind.Claude, out var claudeSettings) && claudeSettings != null)
+        if (Providers.TryGetValue(ProviderKind.Claude, out ProviderSettings? claudeSettings))
         {
             Claude = claudeSettings;
         }
@@ -50,7 +44,7 @@ public class AppSettings
 
         foreach (var provider in ProviderCatalog.SupportedProviders)
         {
-            if (!Providers.TryGetValue(provider, out var settings) || settings == null)
+            if (!Providers.TryGetValue(provider, out ProviderSettings _))
             {
                 Providers[provider] = ProviderSettings.CreateDefault(provider);
             }
@@ -67,7 +61,7 @@ public class AppSettings
     {
         NormalizeProviders();
 
-        if (Providers.TryGetValue(provider, out var settings) && settings != null)
+        if (Providers.TryGetValue(provider, out ProviderSettings? settings))
         {
             return settings;
         }
@@ -76,6 +70,4 @@ public class AppSettings
         Providers[provider] = settings;
         return settings;
     }
-
 }
-

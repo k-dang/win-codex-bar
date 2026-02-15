@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using WinCodexBar.Core.Models;
-using Xunit;
 
 namespace WinCodexBar.Tests;
 
