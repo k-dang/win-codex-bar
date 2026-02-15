@@ -9,9 +9,9 @@ Win Codex Bar is a WinUI 3 desktop tray app for monitoring Codex and Claude Code
 - Configurable refresh interval and per-provider enable/disable settings.
 
 ## Project Layout
-- `tray-ui/` WinUI 3 app (views, view models, services, manifests, assets).
-- `tray-ui.Core/` shared models and provider fetch services.
-- `tray-ui.Tests/` unit tests.
+- `WinCodexBar.UI/` WinUI 3 app (views, view models, services, manifests, assets).
+- `WinCodexBar.Core/` shared models and provider fetch services.
+- `WinCodexBar.Tests/` unit tests.
 
 ## Requirements
 - Windows 10 1809+ (`10.0.17763.0` minimum).
@@ -20,13 +20,13 @@ Win Codex Bar is a WinUI 3 desktop tray app for monitoring Codex and Claude Code
 
 ## Build and Test
 ```powershell
-dotnet restore tray-ui/tray-ui.csproj
-dotnet build tray-ui/tray-ui.csproj -r win-x64
-dotnet test tray-ui.Tests/tray-ui.Tests.csproj
+dotnet restore WinCodexBar.UI/WinCodexBar.UI.csproj
+dotnet build WinCodexBar.UI/WinCodexBar.UI.csproj -r win-x64
+dotnet test WinCodexBar.Tests/WinCodexBar.Tests.csproj
 ```
 
 ## Run Locally
-Open `tray-ui/tray-ui.slnx` (or `tray-ui/tray-ui.csproj`) in Visual Studio and run the app.
+Open `WinCodexBar.UI/WinCodexBar.slnx` (or `WinCodexBar.UI/WinCodexBar.UI.csproj`) in Visual Studio and run the app.
 
 ## Provider Setup
 ### Codex
@@ -45,8 +45,8 @@ Open `tray-ui/tray-ui.slnx` (or `tray-ui/tray-ui.csproj`) in Visual Studio and r
 
 ## Settings and Packaging
 - Runtime settings are stored in `ApplicationData.Current.LocalFolder/settings.json`.
-- Packaging/config files: `tray-ui/Package.appxmanifest` and `tray-ui/app.manifest`.
-- Publish profiles: `tray-ui/Properties/PublishProfiles/`.
+- Packaging/config files: `WinCodexBar.UI/Package.appxmanifest` and `WinCodexBar.UI/app.manifest`.
+- Publish profiles: `WinCodexBar.UI/Properties/PublishProfiles/`.
 
 ## Security Note
 - Do not commit provider cookies or auth tokens.

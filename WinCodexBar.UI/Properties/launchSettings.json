@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WinCodexBar.UI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WinCodexBar.UI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
