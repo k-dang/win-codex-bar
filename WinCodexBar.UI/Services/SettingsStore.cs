@@ -22,7 +22,7 @@ public class SettingsStore
 
     public async Task<AppSettings> LoadAsync()
     {
-        var defaults = AppSettings.CreateDefault();
+        AppSettings defaults = AppSettings.CreateDefault();
 
         try
         {
@@ -37,7 +37,7 @@ public class SettingsStore
                 return defaults;
             }
 
-            var settings = JsonSerializer.Deserialize<AppSettings>(json, SerializerOptions);
+            AppSettings? settings = JsonSerializer.Deserialize<AppSettings>(json, SerializerOptions);
             if (settings == null)
             {
                 return defaults;
@@ -72,5 +72,3 @@ public class SettingsStore
         await File.WriteAllTextAsync(SettingsPath, json);
     }
 }
-
-
