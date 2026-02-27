@@ -10,6 +10,7 @@ namespace WinCodexBar.UI.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
+    private const int MaxDiagnosticsRows = 40;
     private string _selectedProviderFilter = "All";
 
     public ObservableCollection<ProviderUsageRow> ProviderSnapshots { get; } = new();
@@ -36,10 +37,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var row = DiagnosticsLogRow.FromEntry(entry);
         DiagnosticsEntries.Add(row);
-        if (PassesFilter(row))
+
+        while (DiagnosticsEntries.Count > MaxDiagnosticsRows)
         {
-            FilteredDiagnosticsEntries.Add(row);
+            DiagnosticsEntries.RemoveAt(0);
         }
+
+        RefreshFilteredDiagnostics();
     }
 
     private void RefreshFilteredDiagnostics()

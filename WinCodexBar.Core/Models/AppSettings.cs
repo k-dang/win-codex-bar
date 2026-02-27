@@ -24,7 +24,7 @@ public class AppSettings
 
     public void NormalizeProviders()
     {
-        if (Providers.TryGetValue(ProviderKind.Codex, out ProviderSettings? codexSettings))
+        if (Providers.TryGetValue(ProviderKind.Codex, out var codexSettings))
         {
             Codex = codexSettings;
         }
@@ -33,7 +33,7 @@ public class AppSettings
             Providers[ProviderKind.Codex] = Codex;
         }
 
-        if (Providers.TryGetValue(ProviderKind.Claude, out ProviderSettings? claudeSettings))
+        if (Providers.TryGetValue(ProviderKind.Claude, out var claudeSettings))
         {
             Claude = claudeSettings;
         }
@@ -44,7 +44,7 @@ public class AppSettings
 
         foreach (var provider in ProviderCatalog.SupportedProviders)
         {
-            if (!Providers.TryGetValue(provider, out ProviderSettings _))
+            if (!Providers.TryGetValue(provider, out _))
             {
                 Providers[provider] = ProviderSettings.CreateDefault(provider);
             }
@@ -61,7 +61,7 @@ public class AppSettings
     {
         NormalizeProviders();
 
-        if (Providers.TryGetValue(provider, out ProviderSettings? settings))
+        if (Providers.TryGetValue(provider, out var settings))
         {
             return settings;
         }

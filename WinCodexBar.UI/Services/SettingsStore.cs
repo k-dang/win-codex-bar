@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Windows.Storage;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.UI.Services;
@@ -11,8 +10,11 @@ public class SettingsStore
 {
     private const string SettingsFileName = "settings.json";
 
+    private static string SettingsDirectoryPath =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinCodexBar");
+
     private static string SettingsPath =>
-        Path.Combine(ApplicationData.Current.LocalFolder.Path, SettingsFileName);
+        Path.Combine(SettingsDirectoryPath, SettingsFileName);
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -68,7 +70,7 @@ public class SettingsStore
         settings.NormalizeProviders();
 
         var json = JsonSerializer.Serialize(settings, SerializerOptions);
-        Directory.CreateDirectory(ApplicationData.Current.LocalFolder.Path);
+        Directory.CreateDirectory(SettingsDirectoryPath);
         await File.WriteAllTextAsync(SettingsPath, json);
     }
 }

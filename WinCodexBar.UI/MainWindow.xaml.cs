@@ -92,10 +92,28 @@ public sealed partial class MainWindow
 
     private async void RetryProvider_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: ProviderKind provider })
+        if (sender is not Button button)
         {
-            await _monitor.RefreshProviderAsync(provider);
+            return;
         }
+
+        ProviderKind provider;
+        if (button.Tag is ProviderKind providerKind)
+        {
+            provider = providerKind;
+        }
+        else if (button.Tag is string providerName
+            && Enum.TryParse(providerName, ignoreCase: true, out ProviderKind parsedProvider)
+            && parsedProvider != ProviderKind.Unknown)
+        {
+            provider = parsedProvider;
+        }
+        else
+        {
+            return;
+        }
+
+        await _monitor.RefreshProviderAsync(provider);
     }
 
     private void ProviderSelector_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)

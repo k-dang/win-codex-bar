@@ -53,8 +53,23 @@ public sealed partial class SettingsPage
             Claude = claudeSettings
         };
 
-        await _monitor.SaveSettingsAsync(settings);
-        CloseRequested?.Invoke(this, EventArgs.Empty);
+        try
+        {
+            await _monitor.SaveSettingsAsync(settings);
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Save failed",
+                Content = $"Couldn't save settings.\n\nType: {ex.GetType().Name}\nMessage: {ex.Message}",
+                CloseButtonText = "OK",
+                XamlRoot = RootElement.XamlRoot
+            };
+
+            await dialog.ShowAsync();
+        }
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)

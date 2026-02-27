@@ -84,7 +84,18 @@
 
                 <Border x:Name="CodexPanel" Grid.Row="2" Style="{StaticResource AppCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="Codex usage" Style="{StaticResource AppSubtleTextStyle}"/>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Codex usage" Style="{StaticResource AppSubtleTextStyle}"/>
+                            <Button Grid.Column="1"
+                                    Content="Retry"
+                                    Tag="Codex"
+                                    Click="RetryProvider_Click"
+                                    Style="{StaticResource AppGhostButtonStyle}"/>
+                        </Grid>
                         <ItemsControl ItemsSource="{Binding CodexSnapshots}" Margin="0,4,0,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -145,11 +156,6 @@
                                             <TextBlock Text="{Binding AccountLabel}" Style="{StaticResource AppSubtleTextStyle}"/>
                                             <TextBlock Text="{Binding CreditsText}" Style="{StaticResource AppSubtleTextStyle}"/>
                                             <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
-                                            <Button Content="Retry"
-                                                    Tag="{Binding ProviderKind}"
-                                                    IsEnabled="{Binding HasError}"
-                                                    Click="RetryProvider_Click"
-                                                    HorizontalAlignment="Left"/>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -160,7 +166,18 @@
 
                 <Border x:Name="ClaudePanel" Grid.Row="2" Style="{StaticResource AppCardStyle}" Visibility="Collapsed">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="Claude Code usage" Style="{StaticResource AppSubtleTextStyle}"/>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Claude Code usage" Style="{StaticResource AppSubtleTextStyle}"/>
+                            <Button Grid.Column="1"
+                                    Content="Retry"
+                                    Tag="Claude"
+                                    Click="RetryProvider_Click"
+                                    Style="{StaticResource AppGhostButtonStyle}"/>
+                        </Grid>
                         <ItemsControl ItemsSource="{Binding ClaudeSnapshots}" Margin="0,4,0,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -221,11 +238,6 @@
                                             <TextBlock Text="{Binding AccountLabel}" Style="{StaticResource AppSubtleTextStyle}"/>
                                             <TextBlock Text="{Binding CreditsText}" Style="{StaticResource AppSubtleTextStyle}"/>
                                             <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
-                                            <Button Content="Retry"
-                                                    Tag="{Binding ProviderKind}"
-                                                    IsEnabled="{Binding HasError}"
-                                                    Click="RetryProvider_Click"
-                                                    HorizontalAlignment="Left"/>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
