@@ -30,6 +30,15 @@
             <SolidColorBrush x:Key="AppGhostButtonBorderBrush"
                              Color="{ThemeResource ControlStrokeColorDefault}"
                              Opacity="0.45"/>
+            <SolidColorBrush x:Key="TrayMenuBackgroundBrush"
+                             Color="{ThemeResource CardBackgroundFillColorDefault}"
+                             Opacity="0.97"/>
+            <SolidColorBrush x:Key="TrayMenuBorderBrush"
+                             Color="{ThemeResource CardStrokeColorDefault}"
+                             Opacity="0.85"/>
+            <SolidColorBrush x:Key="TrayMenuSeparatorBrush"
+                             Color="{ThemeResource DividerStrokeColorDefault}"
+                             Opacity="0.7"/>
 
             <Style x:Key="AppTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
                 <Setter Property="FontSize" Value="24"/>
@@ -73,6 +82,27 @@
                 <Setter Property="Foreground" Value="{StaticResource AppAccentBrush}"/>
                 <Setter Property="Background" Value="{ThemeResource ControlStrongFillColorDefaultBrush}"/>
                 <Setter Property="Height" Value="8"/>
+            </Style>
+            <Style x:Key="TrayMenuCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{StaticResource TrayMenuBackgroundBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource TrayMenuBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="CornerRadius" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+            </Style>
+            <Style x:Key="TrayMenuInfoTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="LineHeight" Value="16"/>
+            </Style>
+            <Style x:Key="TrayMenuActionButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Padding" Value="12,7"/>
+                <Setter Property="CornerRadius" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
             </Style>
         </ResourceDictionary>
     </Application.Resources>

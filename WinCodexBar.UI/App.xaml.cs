@@ -2,6 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using WinCodexBar.Core.Services;
 using WinCodexBar.UI.Services;
+using WinCodexBar.UI.ViewModels;
 using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -16,6 +17,8 @@ public partial class App
 {
     private Window? _window;
     private TrayService? _trayService;
+    private TrayMenuWindow? _trayMenuWindow;
+    private TrayMenuViewModel? _trayMenuViewModel;
     private UsageMonitor? _monitor;
     private DiagnosticsLogger? _diagnosticsLogger;
 
@@ -54,9 +57,15 @@ public partial class App
 
         var hwnd = WindowNative.GetWindowHandle(_window);
         _trayService = new TrayService(hwnd);
+        _trayMenuViewModel = new TrayMenuViewModel();
+        _trayMenuViewModel.OpenRequested += (_, _) => ShowMainWindow();
+        _trayMenuViewModel.ExitRequested += (_, _) => ExitApplication();
+        _trayMenuViewModel.Update(_monitor.Summary);
+        _trayMenuWindow = new TrayMenuWindow(_trayMenuViewModel, hwnd);
+
         _trayService.OpenRequested += (_, _) => ShowMainWindow();
-        _trayService.ExitRequested += (_, _) => ExitApplication();
-        _monitor.SummaryUpdated += (_, summary) => _trayService.UpdateUsageSummary(summary);
+        _trayService.MenuRequested += (_, request) => ShowTrayMenu(request);
+        _monitor.SummaryUpdated += (_, summary) => UpdateTraySummary(summary);
 
         _ = _monitor.InitializeAsync();
     }
@@ -71,6 +80,9 @@ public partial class App
 
     private void ExitApplication()
     {
+        _trayMenuWindow?.HideMenu();
+        _trayMenuWindow?.RequestClose();
+        _trayMenuWindow = null;
         _trayService?.Dispose();
         _trayService = null;
         if (_window is MainWindow mainWindow)
@@ -82,6 +94,23 @@ public partial class App
             _window?.Close();
         }
         Exit();
+    }
+
+    private void ShowTrayMenu(TrayMenuRequest request)
+    {
+        if (_monitor == null || _trayMenuViewModel == null || _trayMenuWindow == null)
+        {
+            return;
+        }
+
+        _trayMenuViewModel.Update(_monitor.Summary);
+        _trayMenuWindow.ShowAt(request.ScreenX, request.ScreenY);
+    }
+
+    private void UpdateTraySummary(WinCodexBar.Core.Models.UsageSummary summary)
+    {
+        _trayService?.UpdateUsageSummary(summary);
+        _trayMenuViewModel?.Update(summary);
     }
 }
 

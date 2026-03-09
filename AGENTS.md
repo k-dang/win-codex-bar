@@ -21,6 +21,8 @@ Shared/core logic lives under `WinCodexBar.Core/` with models in `WinCodexBar.Co
 
 Follow standard .NET naming: PascalCase for classes, methods, and properties; camelCase for local variables and private fields. Page files should use the `*Page.xaml` suffix, and `x:Name` should be added only for elements referenced in code-behind. Nullable reference types are enabled in `WinCodexBar.UI/WinCodexBar.UI.csproj`, so address warnings rather than suppressing them.
 
+For popup-style WinUI helper windows such as the tray menu, do not rely on XAML border settings alone to remove visible chrome. Windows can still draw a white non-client frame even when `OverlappedPresenter.SetBorderAndTitleBar(false, false)` is used. In those cases, update the native window styles in code-behind (`WS_POPUP`, remove caption/thickframe/system box styles, apply `SWP_FRAMECHANGED`) and, if needed, also use DWM attributes to disable the border color and rounded corners.
+
 ## Testing Guidelines
 
 Tests live in `WinCodexBar.Tests/` and should follow a `*Tests` file naming pattern (for example, `AppSettingsTests`). Prefer descriptive test method names like `MethodName_Scenario_ExpectedResult`.
