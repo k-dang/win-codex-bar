@@ -17,20 +17,20 @@ public sealed class TrayMenuViewModel
     {
         Items.Clear();
 
-        var providerLines = summary.ProviderSnapshots
+        var providerItems = summary.ProviderSnapshots
             .OrderBy(snapshot => snapshot.Provider)
-            .Select(FormatProviderLine)
+            .Select(CreateProviderItem)
             .ToList();
 
-        if (providerLines.Count == 0)
+        if (providerItems.Count == 0)
         {
             Items.Add(new TrayMenuItem(TrayMenuItemKind.Empty, "No provider data", isEnabled: false));
         }
         else
         {
-            foreach (var line in providerLines)
+            foreach (var item in providerItems)
             {
-                Items.Add(new TrayMenuItem(TrayMenuItemKind.Provider, line, isEnabled: false));
+                Items.Add(item);
             }
         }
 
@@ -53,24 +53,28 @@ public sealed class TrayMenuViewModel
         }
     }
 
-    private static string FormatProviderLine(ProviderUsageSnapshot snapshot)
+    private static TrayMenuItem CreateProviderItem(ProviderUsageSnapshot snapshot)
     {
+        var providerName = snapshot.Provider.ToString();
+
         if (!string.IsNullOrWhiteSpace(snapshot.Error))
         {
-            return $"{snapshot.Provider}: {snapshot.Error}";
+            return TrayMenuItem.CreateProviderError(providerName, snapshot.Error);
         }
 
-        var primaryLabel = snapshot.Primary?.Label ?? "Session";
-        var secondaryLabel = snapshot.Secondary?.Label ?? "Weekly";
-        var primaryPercent = FormatPercent(snapshot.Primary?.UsedPercent);
-        var secondaryPercent = FormatPercent(snapshot.Secondary?.UsedPercent);
-
-        return $"{snapshot.Provider}: {primaryPercent} {primaryLabel}, {secondaryPercent} {secondaryLabel}";
+        return TrayMenuItem.CreateProvider(
+            providerName,
+            CreateMetric(snapshot.Primary, "Session"),
+            CreateMetric(snapshot.Secondary, "Weekly"));
     }
 
-    private static string FormatPercent(double? value)
+    private static TrayMenuMetric CreateMetric(UsageWindow? window, string fallbackLabel)
     {
-        return value.HasValue ? $"{value.Value:0}%" : "--%";
+        var value = window?.UsedPercent;
+        return new TrayMenuMetric(
+            window?.Label ?? fallbackLabel,
+            value,
+            value.HasValue ? $"{value.Value:0}%" : "--%");
     }
 }
 
@@ -85,11 +89,20 @@ public enum TrayMenuItemKind
 
 public sealed class TrayMenuItem
 {
-    public TrayMenuItem(TrayMenuItemKind kind, string text, bool isEnabled = true)
+    public TrayMenuItem(
+        TrayMenuItemKind kind,
+        string text,
+        bool isEnabled = true,
+        TrayMenuMetric? primaryMetric = null,
+        TrayMenuMetric? secondaryMetric = null,
+        string? errorText = null)
     {
         Kind = kind;
         Text = text;
         IsEnabled = isEnabled;
+        PrimaryMetric = primaryMetric;
+        SecondaryMetric = secondaryMetric;
+        ErrorText = errorText;
     }
 
     public TrayMenuItemKind Kind { get; }
@@ -97,4 +110,45 @@ public sealed class TrayMenuItem
     public string Text { get; }
 
     public bool IsEnabled { get; }
+
+    public TrayMenuMetric? PrimaryMetric { get; }
+
+    public TrayMenuMetric? SecondaryMetric { get; }
+
+    public string? ErrorText { get; }
+
+    public static TrayMenuItem CreateProvider(string providerName, TrayMenuMetric primaryMetric, TrayMenuMetric secondaryMetric)
+    {
+        return new TrayMenuItem(
+            TrayMenuItemKind.Provider,
+            providerName,
+            isEnabled: false,
+            primaryMetric: primaryMetric,
+            secondaryMetric: secondaryMetric);
+    }
+
+    public static TrayMenuItem CreateProviderError(string providerName, string errorText)
+    {
+        return new TrayMenuItem(
+            TrayMenuItemKind.Provider,
+            providerName,
+            isEnabled: false,
+            errorText: errorText);
+    }
+}
+
+public sealed class TrayMenuMetric
+{
+    public TrayMenuMetric(string label, double? percentValue, string percentText)
+    {
+        Label = label;
+        PercentValue = percentValue;
+        PercentText = percentText;
+    }
+
+    public string Label { get; }
+
+    public double? PercentValue { get; }
+
+    public string PercentText { get; }
 }

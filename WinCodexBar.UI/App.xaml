@@ -39,6 +39,9 @@
             <SolidColorBrush x:Key="TrayMenuSeparatorBrush"
                              Color="{ThemeResource DividerStrokeColorDefault}"
                              Opacity="0.7"/>
+            <SolidColorBrush x:Key="TrayMenuMeterTrackBrush"
+                             Color="{ThemeResource ControlStrongFillColorDefault}"
+                             Opacity="0.4"/>
 
             <Style x:Key="AppTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
                 <Setter Property="FontSize" Value="24"/>
@@ -94,6 +97,31 @@
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="LineHeight" Value="16"/>
+            </Style>
+            <Style x:Key="TrayMenuProviderTitleTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="LineHeight" Value="16"/>
+            </Style>
+            <Style x:Key="TrayMenuMetricLabelTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="LineHeight" Value="14"/>
+            </Style>
+            <Style x:Key="TrayMenuMetricPercentTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="LineHeight" Value="14"/>
+            </Style>
+            <Style x:Key="TrayMenuProgressBarStyle" TargetType="ProgressBar">
+                <Setter Property="Minimum" Value="0"/>
+                <Setter Property="Maximum" Value="100"/>
+                <Setter Property="Height" Value="4"/>
+                <Setter Property="Foreground" Value="{StaticResource AppAccentBrush}"/>
+                <Setter Property="Background" Value="{StaticResource TrayMenuMeterTrackBrush}"/>
+                <Setter Property="CornerRadius" Value="2"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
             </Style>
             <Style x:Key="TrayMenuActionButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
                 <Setter Property="HorizontalAlignment" Value="Stretch"/>

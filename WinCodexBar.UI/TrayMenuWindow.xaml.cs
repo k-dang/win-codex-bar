@@ -128,6 +128,8 @@ public sealed partial class TrayMenuWindow : Window
             switch (item.Kind)
             {
                 case TrayMenuItemKind.Provider:
+                    MenuItemsHost.Children.Add(CreateProviderBlock(item));
+                    break;
                 case TrayMenuItemKind.Empty:
                     MenuItemsHost.Children.Add(new TextBlock
                     {
@@ -161,6 +163,98 @@ public sealed partial class TrayMenuWindow : Window
                     break;
             }
         }
+    }
+
+    private static FrameworkElement CreateProviderBlock(TrayMenuItem item)
+    {
+        var panel = new StackPanel
+        {
+            Spacing = 6,
+            Margin = new Thickness(12, 9, 12, 9)
+        };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = item.Text,
+            Style = (Style)Application.Current.Resources["TrayMenuProviderTitleTextStyle"]
+        });
+
+        if (!string.IsNullOrWhiteSpace(item.ErrorText))
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = item.ErrorText,
+                Style = (Style)Application.Current.Resources["TrayMenuInfoTextStyle"],
+                TextWrapping = TextWrapping.Wrap,
+                Opacity = 0.82
+            });
+
+            return panel;
+        }
+
+        if (item.PrimaryMetric != null)
+        {
+            panel.Children.Add(CreateMetricRow(item.PrimaryMetric));
+        }
+
+        if (item.SecondaryMetric != null)
+        {
+            panel.Children.Add(CreateMetricRow(item.SecondaryMetric));
+        }
+
+        return panel;
+    }
+
+    private static Grid CreateMetricRow(TrayMenuMetric metric)
+    {
+        var grid = new Grid
+        {
+            ColumnSpacing = 8,
+            Opacity = metric.PercentValue.HasValue ? 1.0 : 0.62
+        };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var label = new TextBlock
+        {
+            Text = metric.Label,
+            Style = (Style)Application.Current.Resources["TrayMenuMetricLabelTextStyle"],
+            VerticalAlignment = VerticalAlignment.Center,
+            MinWidth = 42
+        };
+        Grid.SetColumn(label, 0);
+        grid.Children.Add(label);
+
+        var progressBar = new ProgressBar
+        {
+            Style = (Style)Application.Current.Resources["TrayMenuProgressBarStyle"],
+            Value = ClampPercent(metric.PercentValue),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(progressBar, 1);
+        grid.Children.Add(progressBar);
+
+        var percent = new TextBlock
+        {
+            Text = metric.PercentText,
+            Style = (Style)Application.Current.Resources["TrayMenuMetricPercentTextStyle"],
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(percent, 2);
+        grid.Children.Add(percent);
+
+        return grid;
+    }
+
+    private static double ClampPercent(double? value)
+    {
+        if (!value.HasValue)
+        {
+            return 0;
+        }
+
+        return Math.Clamp(value.Value, 0, 100);
     }
 
     private void ActionButton_Click(object sender, RoutedEventArgs e)
