@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,6 +20,10 @@ public sealed partial class TrayMenuWindow : Window
     private const int GWL_STYLE = -16;
     private const int GWL_EXSTYLE = -20;
     private const int GWL_HWNDPARENT = -8;
+    private const int WH_MOUSE_LL = 14;
+    private const int WM_LBUTTONDOWN = 0x0201;
+    private const int WM_MBUTTONDOWN = 0x0207;
+    private const int WM_XBUTTONDOWN = 0x020B;
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     private const int DWMWA_BORDER_COLOR = 34;
     private const uint DWM_WINDOW_CORNER_PREFERENCE_DONOTROUND = 1;
@@ -37,13 +43,21 @@ public sealed partial class TrayMenuWindow : Window
     private static readonly nint WsPopup = unchecked((nint)0x80000000u);
     private readonly TrayMenuViewModel _viewModel;
     private readonly IntPtr _ownerHwnd;
+    private readonly DispatcherQueue _dispatcherQueue;
+    private readonly LowLevelMouseProc _mouseHookProc;
     private AppWindow? _appWindow;
+    private IntPtr _hwnd;
+    private IntPtr _mouseHookHandle;
     private bool _allowClose;
+
+    public bool IsMenuVisible { get; private set; }
 
     public TrayMenuWindow(TrayMenuViewModel viewModel, IntPtr ownerHwnd)
     {
         _viewModel = viewModel;
         _ownerHwnd = ownerHwnd;
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread() ?? throw new InvalidOperationException("Tray menu window requires a dispatcher queue.");
+        _mouseHookProc = MouseHookCallback;
         InitializeComponent();
 
         InitializeWindowChrome();
@@ -55,24 +69,30 @@ public sealed partial class TrayMenuWindow : Window
         RebuildMenuItems();
         PositionWindow(screenX, screenY);
         _appWindow?.Show();
+        IsMenuVisible = true;
+        EnsureOutsideClickHook();
         Activate();
     }
 
     public void HideMenu()
     {
+        RemoveOutsideClickHook();
+        IsMenuVisible = false;
         _appWindow?.Hide();
     }
 
     public void RequestClose()
     {
         _allowClose = true;
+        RemoveOutsideClickHook();
+        IsMenuVisible = false;
         Close();
     }
 
     private void InitializeWindowChrome()
     {
-        var hwnd = WindowNative.GetWindowHandle(this);
-        var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+        _hwnd = WindowNative.GetWindowHandle(this);
+        var windowId = Win32Interop.GetWindowIdFromWindow(_hwnd);
         _appWindow = AppWindow.GetFromWindowId(windowId);
         _appWindow.Closing += AppWindow_Closing;
         if (_appWindow?.Presenter is OverlappedPresenter presenter)
@@ -84,22 +104,22 @@ public sealed partial class TrayMenuWindow : Window
             presenter.IsAlwaysOnTop = true;
         }
 
-        SetWindowLongPtr(hwnd, GWL_HWNDPARENT, _ownerHwnd);
-        var style = GetWindowLongPtr(hwnd, GWL_STYLE);
+        SetWindowLongPtr(_hwnd, GWL_HWNDPARENT, _ownerHwnd);
+        var style = GetWindowLongPtr(_hwnd, GWL_STYLE);
         style &= ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
         style |= WsPopup;
-        SetWindowLongPtr(hwnd, GWL_STYLE, style);
+        SetWindowLongPtr(_hwnd, GWL_STYLE, style);
 
-        var exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+        var exStyle = GetWindowLongPtr(_hwnd, GWL_EXSTYLE);
         exStyle = (exStyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
-        SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle);
-        SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        SetWindowLongPtr(_hwnd, GWL_EXSTYLE, exStyle);
+        SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 
         var cornerPreference = DWM_WINDOW_CORNER_PREFERENCE_DONOTROUND;
-        _ = DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref cornerPreference, sizeof(uint));
+        _ = DwmSetWindowAttribute(_hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref cornerPreference, sizeof(uint));
 
         var borderColor = DWM_COLOR_NONE;
-        _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref borderColor, sizeof(uint));
+        _ = DwmSetWindowAttribute(_hwnd, DWMWA_BORDER_COLOR, ref borderColor, sizeof(uint));
     }
 
     private void TrayMenuWindow_Activated(object sender, WindowActivatedEventArgs args)
@@ -117,6 +137,12 @@ public sealed partial class TrayMenuWindow : Window
             HideMenu();
             e.Handled = true;
         }
+    }
+
+    private void RootGrid_RightTapped(object sender, RightTappedRoutedEventArgs e)
+    {
+        HideMenu();
+        e.Handled = true;
     }
 
     private void RebuildMenuItems()
@@ -270,11 +296,71 @@ public sealed partial class TrayMenuWindow : Window
     {
         if (_allowClose)
         {
+            RemoveOutsideClickHook();
             return;
         }
 
         args.Cancel = true;
         sender.Hide();
+    }
+
+    private void EnsureOutsideClickHook()
+    {
+        if (_mouseHookHandle != IntPtr.Zero)
+        {
+            return;
+        }
+
+        using var currentProcess = Process.GetCurrentProcess();
+        using var currentModule = currentProcess.MainModule;
+        var moduleHandle = currentModule != null ? GetModuleHandle(currentModule.ModuleName) : IntPtr.Zero;
+        _mouseHookHandle = SetWindowsHookEx(WH_MOUSE_LL, _mouseHookProc, moduleHandle, 0);
+    }
+
+    private void RemoveOutsideClickHook()
+    {
+        if (_mouseHookHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        _ = UnhookWindowsHookEx(_mouseHookHandle);
+        _mouseHookHandle = IntPtr.Zero;
+    }
+
+    private IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode >= 0 && IsMenuVisible && lParam != IntPtr.Zero && IsOutsideDismissMessage(wParam))
+        {
+            var hookData = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
+            if (!IsPointInsideMenu(hookData.Point))
+            {
+                _dispatcherQueue.TryEnqueue(HideMenu);
+            }
+        }
+
+        return CallNextHookEx(_mouseHookHandle, nCode, wParam, lParam);
+    }
+
+    private bool IsPointInsideMenu(POINT point)
+    {
+        if (_hwnd == IntPtr.Zero || !GetWindowRect(_hwnd, out var rect))
+        {
+            return false;
+        }
+
+        return point.X >= rect.Left &&
+               point.X < rect.Right &&
+               point.Y >= rect.Top &&
+               point.Y < rect.Bottom;
+    }
+
+    private static bool IsOutsideDismissMessage(IntPtr wParam)
+    {
+        var message = wParam.ToInt32();
+        return message == WM_LBUTTONDOWN ||
+               message == WM_MBUTTONDOWN ||
+               message == WM_XBUTTONDOWN;
     }
 
     private void PositionWindow(int screenX, int screenY)
@@ -334,6 +420,49 @@ public sealed partial class TrayMenuWindow : Window
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hmod, uint dwThreadId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref uint pvAttribute, int cbAttribute);
+
+    private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MSLLHOOKSTRUCT
+    {
+        public POINT Point;
+        public int MouseData;
+        public int Flags;
+        public int Time;
+        public IntPtr DwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
 }

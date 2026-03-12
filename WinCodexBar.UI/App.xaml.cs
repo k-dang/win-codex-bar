@@ -103,6 +103,12 @@ public partial class App
             return;
         }
 
+        if (_trayMenuWindow.IsMenuVisible)
+        {
+            _trayMenuWindow.HideMenu();
+            return;
+        }
+
         _trayMenuViewModel.Update(_monitor.Summary);
         _trayMenuWindow.ShowAt(request.ScreenX, request.ScreenY);
     }
