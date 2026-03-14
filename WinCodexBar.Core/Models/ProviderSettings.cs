@@ -23,21 +23,13 @@ public sealed class ProviderSettings
 
     public static ProviderSettings CreateDefault(ProviderKind provider)
     {
-        return provider switch
+        _ = ProviderCatalog.GetDefinition(provider);
+
+        return new ProviderSettings
         {
-            ProviderKind.Codex => new ProviderSettings
-            {
-                Enabled = true,
-                SourceMode = ProviderSourceMode.Auto,
-                CookieSource = CookieSourceMode.Auto
-            },
-            ProviderKind.Claude => new ProviderSettings
-            {
-                Enabled = true,
-                SourceMode = ProviderSourceMode.Auto,
-                CookieSource = CookieSourceMode.Auto
-            },
-            _ => new ProviderSettings()
+            Enabled = true,
+            SourceMode = ProviderSourceMode.Auto,
+            CookieSource = CookieSourceMode.Auto
         };
     }
 }

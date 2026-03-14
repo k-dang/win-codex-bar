@@ -1,8 +1,9 @@
-using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using WinCodexBar.Core.Models;
 
@@ -11,27 +12,65 @@ namespace WinCodexBar.UI.ViewModels;
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     private const int MaxDiagnosticsRows = 40;
-    private string _selectedProviderFilter = "All";
+    private readonly Dictionary<ProviderKind, List<ProviderUsageRow>> _providerRows = new();
+    private ProviderSectionOption? _selectedProviderSection;
+    private ProviderKind? _selectedDiagnosticsProvider;
 
-    public ObservableCollection<ProviderUsageRow> ProviderSnapshots { get; } = new();
-    public ObservableCollection<ProviderUsageRow> CodexSnapshots { get; } = new();
-    public ObservableCollection<ProviderUsageRow> ClaudeSnapshots { get; } = new();
+    public MainViewModel()
+    {
+        foreach (var definition in ProviderCatalog.SupportedProviders)
+        {
+            ProviderSections.Add(new ProviderSectionOption(definition.Kind, definition.DisplayName, definition.UsageTitle));
+            _providerRows[definition.Kind] = new List<ProviderUsageRow>();
+        }
+
+        SelectedProviderSection = ProviderSections.FirstOrDefault();
+    }
+
+    public ObservableCollection<ProviderSectionOption> ProviderSections { get; } = new();
+    public ObservableCollection<ProviderUsageRow> SelectedProviderSnapshots { get; } = new();
     public ObservableCollection<DiagnosticsLogRow> DiagnosticsEntries { get; } = new();
     public ObservableCollection<DiagnosticsLogRow> FilteredDiagnosticsEntries { get; } = new();
 
-    public string SelectedProviderFilter
+    public ProviderSectionOption? SelectedProviderSection
     {
-        get => _selectedProviderFilter;
+        get => _selectedProviderSection;
         set
         {
-            if (SetProperty(ref _selectedProviderFilter, value))
+            if (SetProperty(ref _selectedProviderSection, value))
+            {
+                RefreshSelectedProviderSnapshots();
+            }
+        }
+    }
+
+    public ProviderKind? SelectedDiagnosticsProvider
+    {
+        get => _selectedDiagnosticsProvider;
+        set
+        {
+            if (SetProperty(ref _selectedDiagnosticsProvider, value))
             {
                 RefreshFilteredDiagnostics();
             }
         }
     }
 
+    public string SelectedProviderTitle => SelectedProviderSection?.UsageTitle ?? "Provider usage";
+
+    public Visibility SelectedProviderSnapshotsVisibility =>
+        SelectedProviderSnapshots.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility SelectedProviderEmptyStateVisibility =>
+        SelectedProviderSnapshots.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public void SelectProvider(ProviderKind provider)
+    {
+        SelectedProviderSection = ProviderSections.FirstOrDefault(section => section.Provider == provider)
+            ?? SelectedProviderSection;
+    }
 
     public void AddDiagnosticsEntry(DiagnosticsLogEntry entry)
     {
@@ -46,6 +85,58 @@ public sealed class MainViewModel : INotifyPropertyChanged
         RefreshFilteredDiagnostics();
     }
 
+    public void Update(UsageSummary summary)
+    {
+        foreach (var section in ProviderSections)
+        {
+            _providerRows[section.Provider].Clear();
+        }
+
+        foreach (var snapshot in summary.ProviderSnapshots.OrderBy(item => item.Provider))
+        {
+            EnsureProviderSection(snapshot.Provider);
+            _providerRows[snapshot.Provider].Add(ProviderUsageRow.FromSnapshot(snapshot));
+        }
+
+        if (SelectedProviderSection == null && ProviderSections.Count > 0)
+        {
+            SelectedProviderSection = ProviderSections[0];
+            return;
+        }
+
+        RefreshSelectedProviderSnapshots();
+    }
+
+    private void EnsureProviderSection(ProviderKind provider)
+    {
+        if (_providerRows.ContainsKey(provider))
+        {
+            return;
+        }
+
+        var definition = ProviderCatalog.GetDefinition(provider);
+        ProviderSections.Add(new ProviderSectionOption(definition.Kind, definition.DisplayName, definition.UsageTitle));
+        _providerRows[provider] = new List<ProviderUsageRow>();
+    }
+
+    private void RefreshSelectedProviderSnapshots()
+    {
+        SelectedProviderSnapshots.Clear();
+
+        if (SelectedProviderSection != null &&
+            _providerRows.TryGetValue(SelectedProviderSection.Provider, out var rows))
+        {
+            foreach (var row in rows)
+            {
+                SelectedProviderSnapshots.Add(row);
+            }
+        }
+
+        OnPropertyChanged(nameof(SelectedProviderTitle));
+        OnPropertyChanged(nameof(SelectedProviderSnapshotsVisibility));
+        OnPropertyChanged(nameof(SelectedProviderEmptyStateVisibility));
+    }
+
     private void RefreshFilteredDiagnostics()
     {
         FilteredDiagnosticsEntries.Clear();
@@ -57,34 +148,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private bool PassesFilter(DiagnosticsLogRow row)
     {
-        if (_selectedProviderFilter == "All")
-        {
-            return true;
-        }
-        return string.Equals(row.ProviderName, _selectedProviderFilter, StringComparison.OrdinalIgnoreCase)
-            || string.IsNullOrEmpty(row.ProviderName);
-    }
-
-    public void Update(UsageSummary summary)
-    {
-        ProviderSnapshots.Clear();
-        CodexSnapshots.Clear();
-        ClaudeSnapshots.Clear();
-
-        foreach (var snapshot in summary.ProviderSnapshots.OrderBy(item => item.Provider))
-        {
-            var row = ProviderUsageRow.FromSnapshot(snapshot);
-            ProviderSnapshots.Add(row);
-
-            if (snapshot.Provider == ProviderKind.Codex)
-            {
-                CodexSnapshots.Add(row);
-            }
-            else if (snapshot.Provider == ProviderKind.Claude)
-            {
-                ClaudeSnapshots.Add(row);
-            }
-        }
+        return !_selectedDiagnosticsProvider.HasValue
+            || row.ProviderKind == _selectedDiagnosticsProvider
+            || row.ProviderKind == null;
     }
 
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? name = null)
@@ -95,9 +161,28 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        OnPropertyChanged(name);
         return true;
     }
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+}
+
+public sealed class ProviderSectionOption
+{
+    public ProviderSectionOption(ProviderKind provider, string displayName, string usageTitle)
+    {
+        Provider = provider;
+        DisplayName = displayName;
+        UsageTitle = usageTitle;
+    }
+
+    public ProviderKind Provider { get; }
+    public string DisplayName { get; }
+    public string UsageTitle { get; }
 }
 
 public sealed class ProviderUsageRow
@@ -122,6 +207,7 @@ public sealed class ProviderUsageRow
 
     public static ProviderUsageRow FromSnapshot(ProviderUsageSnapshot snapshot)
     {
+        var definition = ProviderCatalog.GetDefinition(snapshot.Provider);
         var primary = snapshot.Primary;
         var secondary = snapshot.Secondary;
         var account = !string.IsNullOrWhiteSpace(snapshot.AccountEmail)
@@ -131,15 +217,15 @@ public sealed class ProviderUsageRow
         return new ProviderUsageRow
         {
             ProviderKind = snapshot.Provider,
-            ProviderName = snapshot.Provider.ToString(),
+            ProviderName = definition.DisplayName,
             SourceLabel = snapshot.SourceLabel,
             AccountLabel = account,
-            PrimaryLabel = primary?.Label ?? "Session",
+            PrimaryLabel = primary?.Label ?? definition.PrimaryUsageLabel,
             PrimaryPercent = primary?.UsedPercent ?? 0,
             PrimaryIndeterminate = primary?.UsedPercent == null,
             PrimaryPercentText = FormatPercent(primary?.UsedPercent),
             PrimaryReset = primary?.ResetDescription ?? string.Empty,
-            SecondaryLabel = secondary?.Label ?? "Weekly",
+            SecondaryLabel = secondary?.Label ?? definition.SecondaryUsageLabel,
             SecondaryPercent = secondary?.UsedPercent ?? 0,
             SecondaryIndeterminate = secondary?.UsedPercent == null,
             SecondaryPercentText = FormatPercent(secondary?.UsedPercent),
@@ -162,6 +248,7 @@ public sealed class DiagnosticsLogRow
     private static readonly SolidColorBrush NormalBrush = new(Microsoft.UI.Colors.White);
 
     public string TimestampText { get; init; } = string.Empty;
+    public ProviderKind? ProviderKind { get; init; }
     public string ProviderName { get; init; } = string.Empty;
     public string EventTypeName { get; init; } = string.Empty;
     public string SourceMethod { get; init; } = string.Empty;
@@ -180,7 +267,8 @@ public sealed class DiagnosticsLogRow
         return new DiagnosticsLogRow
         {
             TimestampText = entry.Timestamp.ToString("HH:mm:ss.fff"),
-            ProviderName = entry.Provider?.ToString() ?? string.Empty,
+            ProviderKind = entry.Provider,
+            ProviderName = entry.Provider.HasValue ? ProviderCatalog.GetDisplayName(entry.Provider.Value) : string.Empty,
             EventTypeName = FormatEventType(entry.EventType),
             SourceMethod = entry.SourceMethod ?? string.Empty,
             Message = entry.Message,
@@ -203,4 +291,3 @@ public sealed class DiagnosticsLogRow
         };
     }
 }
-

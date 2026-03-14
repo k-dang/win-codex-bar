@@ -18,6 +18,8 @@ namespace WinCodexBar.UI;
 
 public sealed partial class MainWindow
 {
+    private const string DiagnosticsSectionTag = "Diagnostics";
+    private const string DiagnosticsAllProvidersTag = "All";
     private const int DefaultWindowWidth = 420;
     private const int DefaultWindowHeight = 500;
     private const int MinWindowHeight = 420;
@@ -49,6 +51,8 @@ public sealed partial class MainWindow
         SizeChanged += MainWindow_SizeChanged;
 
         RootGrid.DataContext = ViewModel;
+        PopulateProviderSelector();
+        PopulateDiagnosticsFilterComboBox();
         ViewModel.Update(_monitor.Summary);
         _monitor.SummaryUpdated += OnSummaryUpdated;
 
@@ -118,21 +122,85 @@ public sealed partial class MainWindow
 
     private void ProviderSelector_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        CodexPanel.Visibility = sender.SelectedItem == SelectorCodex ? Visibility.Visible : Visibility.Collapsed;
-        ClaudePanel.Visibility = sender.SelectedItem == SelectorClaude ? Visibility.Visible : Visibility.Collapsed;
-        DiagnosticsPanel.Visibility = sender.SelectedItem == SelectorDiagnostics ? Visibility.Visible : Visibility.Collapsed;
+        if (sender.SelectedItem is SelectorBarItem selectedItem && selectedItem.Tag is ProviderKind provider)
+        {
+            ViewModel.SelectProvider(provider);
+            ProviderPanel.Visibility = Visibility.Visible;
+            DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            ProviderPanel.Visibility = Visibility.Collapsed;
+            DiagnosticsPanel.Visibility = Visibility.Visible;
+        }
+
         ScheduleResizeToContentHeight();
     }
 
     private void DiagnosticsFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        var filter = DiagnosticsFilterComboBox.SelectedIndex switch
+        var filter = DiagnosticsFilterComboBox.SelectedItem is ComboBoxItem item && item.Tag is ProviderKind provider
+            ? provider
+            : (ProviderKind?)null;
+
+        ViewModel.SelectedDiagnosticsProvider = filter;
+    }
+
+    private void PopulateProviderSelector()
+    {
+        ProviderSelector.Items.Clear();
+
+        SelectorBarItem? selectedItem = null;
+        foreach (var definition in ProviderCatalog.SupportedProviders)
         {
-            1 => "Codex",
-            2 => "Claude",
-            _ => "All"
-        };
-        ViewModel.SelectedProviderFilter = filter;
+            var item = new SelectorBarItem
+            {
+                Text = definition.DisplayName,
+                Tag = definition.Kind
+            };
+
+            if (selectedItem == null)
+            {
+                item.IsSelected = true;
+                selectedItem = item;
+            }
+
+            ProviderSelector.Items.Add(item);
+        }
+
+        ProviderSelector.Items.Add(new SelectorBarItem
+        {
+            Text = "Diagnostics",
+            Tag = DiagnosticsSectionTag
+        });
+
+        if (selectedItem?.Tag is ProviderKind provider)
+        {
+            ViewModel.SelectProvider(provider);
+            ProviderPanel.Visibility = Visibility.Visible;
+            DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void PopulateDiagnosticsFilterComboBox()
+    {
+        DiagnosticsFilterComboBox.Items.Clear();
+        DiagnosticsFilterComboBox.Items.Add(new ComboBoxItem
+        {
+            Content = "All",
+            Tag = DiagnosticsAllProvidersTag
+        });
+
+        foreach (var definition in ProviderCatalog.SupportedProviders)
+        {
+            DiagnosticsFilterComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = definition.DisplayName,
+                Tag = definition.Kind
+            });
+        }
+
+        DiagnosticsFilterComboBox.SelectedIndex = 0;
     }
 
     private void SettingsWindow_Closed(object sender, WindowEventArgs args)

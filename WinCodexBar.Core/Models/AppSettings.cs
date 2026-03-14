@@ -4,47 +4,23 @@ public class AppSettings
 {
     public int RefreshMinutes { get; set; } = 5;
     public Dictionary<ProviderKind, ProviderSettings> Providers { get; set; } = new();
-    public ProviderSettings Codex { get; set; } = ProviderSettings.CreateDefault(ProviderKind.Codex);
-    public ProviderSettings Claude { get; set; } = ProviderSettings.CreateDefault(ProviderKind.Claude);
 
     public static AppSettings CreateDefault()
     {
-        var settings = new AppSettings
+        return new AppSettings
         {
-            Codex = ProviderSettings.CreateDefault(ProviderKind.Codex),
-            Claude = ProviderSettings.CreateDefault(ProviderKind.Claude)
+            Providers = ProviderCatalog.SupportedProviderKinds
+                .ToDictionary(provider => provider, ProviderSettings.CreateDefault)
         };
-        settings.Providers = new Dictionary<ProviderKind, ProviderSettings>
-        {
-            [ProviderKind.Codex] = settings.Codex,
-            [ProviderKind.Claude] = settings.Claude
-        };
-        return settings;
     }
 
     public void NormalizeProviders()
     {
-        if (Providers.TryGetValue(ProviderKind.Codex, out var codexSettings))
-        {
-            Codex = codexSettings;
-        }
-        else
-        {
-            Providers[ProviderKind.Codex] = Codex;
-        }
+        Providers ??= new Dictionary<ProviderKind, ProviderSettings>();
 
-        if (Providers.TryGetValue(ProviderKind.Claude, out var claudeSettings))
+        foreach (var provider in ProviderCatalog.SupportedProviderKinds)
         {
-            Claude = claudeSettings;
-        }
-        else
-        {
-            Providers[ProviderKind.Claude] = Claude;
-        }
-
-        foreach (var provider in ProviderCatalog.SupportedProviders)
-        {
-            if (!Providers.TryGetValue(provider, out _))
+            if (!Providers.TryGetValue(provider, out var providerSettings) || providerSettings == null)
             {
                 Providers[provider] = ProviderSettings.CreateDefault(provider);
             }
@@ -61,7 +37,7 @@ public class AppSettings
     {
         NormalizeProviders();
 
-        if (Providers.TryGetValue(provider, out var settings))
+        if (Providers.TryGetValue(provider, out var settings) && settings != null)
         {
             return settings;
         }

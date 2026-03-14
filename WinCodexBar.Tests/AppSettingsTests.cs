@@ -8,11 +8,16 @@ public class AppSettingsTests
     public void CreateDefault_PopulatesProviderMap()
     {
         var settings = AppSettings.CreateDefault();
+        var supportedProviders = ProviderCatalog.SupportedProviderKinds.ToArray();
 
         Assert.NotNull(settings.Providers);
-        Assert.Equal(2, settings.Providers.Count);
-        Assert.Same(settings.Codex, settings.Providers[ProviderKind.Codex]);
-        Assert.Same(settings.Claude, settings.Providers[ProviderKind.Claude]);
+        Assert.Equal(supportedProviders.Length, settings.Providers.Count);
+
+        foreach (var provider in supportedProviders)
+        {
+            Assert.True(settings.Providers.ContainsKey(provider));
+            Assert.NotNull(settings.Providers[provider]);
+        }
     }
 
     [Fact]
@@ -21,8 +26,6 @@ public class AppSettingsTests
         var codexSettings = new ProviderSettings { Enabled = false };
         var settings = new AppSettings
         {
-            Codex = ProviderSettings.CreateDefault(ProviderKind.Codex),
-            Claude = ProviderSettings.CreateDefault(ProviderKind.Claude),
             Providers = new Dictionary<ProviderKind, ProviderSettings>
             {
                 [ProviderKind.Codex] = codexSettings
@@ -31,8 +34,11 @@ public class AppSettingsTests
 
         settings.NormalizeProviders();
 
-        Assert.Same(codexSettings, settings.Codex);
-        Assert.NotNull(settings.Providers[ProviderKind.Claude]);
+        Assert.Same(codexSettings, settings.Providers[ProviderKind.Codex]);
+        foreach (var provider in ProviderCatalog.SupportedProviderKinds)
+        {
+            Assert.NotNull(settings.Providers[provider]);
+        }
     }
 
     [Fact]
@@ -40,18 +46,16 @@ public class AppSettingsTests
     {
         var settings = new AppSettings
         {
-            Providers = null!,
-            Codex = null!,
-            Claude = null!
+            Providers = null!
         };
 
         settings.NormalizeProviders();
 
         Assert.NotNull(settings.Providers);
-        Assert.NotNull(settings.Codex);
-        Assert.NotNull(settings.Claude);
-        Assert.NotNull(settings.Providers[ProviderKind.Codex]);
-        Assert.NotNull(settings.Providers[ProviderKind.Claude]);
+        foreach (var provider in ProviderCatalog.SupportedProviderKinds)
+        {
+            Assert.NotNull(settings.Providers[provider]);
+        }
     }
 
     [Fact]

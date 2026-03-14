@@ -1,4 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinCodexBar.Core.Models;
@@ -11,16 +16,18 @@ public sealed partial class SettingsPage
     private readonly UsageMonitor _monitor;
     public event EventHandler? CloseRequested;
 
-    public FrameworkElement RootElement => RootGrid;
-    public UIElement TitleBarDragRegionElement => TitleBarDragRegion;
-    public Border TitleBarRightInsetElement => TitleBarRightInset;
-
     public SettingsPage(UsageMonitor monitor)
     {
         _monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         InitializeComponent();
+        RootGrid.DataContext = this;
         LoadSettings();
     }
+
+    public FrameworkElement RootElement => RootGrid;
+    public UIElement TitleBarDragRegionElement => TitleBarDragRegion;
+    public Border TitleBarRightInsetElement => TitleBarRightInset;
+    public ObservableCollection<ProviderSettingsEditorState> ProviderEditors { get; } = new();
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
@@ -30,27 +37,18 @@ public sealed partial class SettingsPage
             refreshValue = 5;
         }
 
-        var codexSettings = new ProviderSettings
-        {
-            Enabled = SettingsCodexEnabledBox.IsChecked == true,
-            SourceMode = ParseSourceMode(SettingsCodexSourceBox.SelectedIndex),
-            CookieSource = ParseCookieSource(SettingsCodexCookieSourceBox.SelectedIndex),
-            CookieHeader = SettingsCodexCookieHeaderBox.Text?.Trim()
-        };
-
-        var claudeSettings = new ProviderSettings
-        {
-            Enabled = SettingsClaudeEnabledBox.IsChecked == true,
-            SourceMode = ParseSourceMode(SettingsClaudeSourceBox.SelectedIndex),
-            CookieSource = ParseCookieSource(SettingsClaudeCookieSourceBox.SelectedIndex),
-            CookieHeader = SettingsClaudeCookieHeaderBox.Text?.Trim()
-        };
-
         var settings = new AppSettings
         {
             RefreshMinutes = (int)Math.Max(1, refreshValue),
-            Codex = codexSettings,
-            Claude = claudeSettings
+            Providers = ProviderEditors.ToDictionary(
+                editor => editor.Provider,
+                editor => new ProviderSettings
+                {
+                    Enabled = editor.IsEnabled,
+                    SourceMode = editor.SelectedSourceMode,
+                    CookieSource = editor.SelectedCookieSourceMode,
+                    CookieHeader = string.IsNullOrWhiteSpace(editor.CookieHeader) ? null : editor.CookieHeader.Trim()
+                })
         };
 
         try
@@ -80,48 +78,119 @@ public sealed partial class SettingsPage
     private void LoadSettings()
     {
         SettingsRefreshMinutesBox.Value = _monitor.Settings.RefreshMinutes;
+        ProviderEditors.Clear();
 
-        SettingsCodexEnabledBox.IsChecked = _monitor.Settings.Codex.Enabled;
-        SettingsCodexSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Codex.SourceMode);
-        SettingsCodexCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Codex.CookieSource);
-        SettingsCodexCookieHeaderBox.Text = _monitor.Settings.Codex.CookieHeader ?? string.Empty;
-
-        SettingsClaudeEnabledBox.IsChecked = _monitor.Settings.Claude.Enabled;
-        SettingsClaudeSourceBox.SelectedIndex = SourceIndex(_monitor.Settings.Claude.SourceMode);
-        SettingsClaudeCookieSourceBox.SelectedIndex = CookieIndex(_monitor.Settings.Claude.CookieSource);
-        SettingsClaudeCookieHeaderBox.Text = _monitor.Settings.Claude.CookieHeader ?? string.Empty;
-    }
-
-    private static ProviderSourceMode ParseSourceMode(int selectedIndex)
-    {
-        return selectedIndex switch
+        foreach (var definition in ProviderCatalog.SupportedProviders)
         {
-            1 => ProviderSourceMode.OAuth,
-            2 => ProviderSourceMode.Web,
-            3 => ProviderSourceMode.Cli,
-            _ => ProviderSourceMode.Auto
-        };
-    }
-
-    private static int SourceIndex(ProviderSourceMode mode)
-    {
-        return mode switch
-        {
-            ProviderSourceMode.OAuth => 1,
-            ProviderSourceMode.Web => 2,
-            ProviderSourceMode.Cli => 3,
-            _ => 0
-        };
-    }
-
-    private static CookieSourceMode ParseCookieSource(int selectedIndex)
-    {
-        return selectedIndex == 1 ? CookieSourceMode.Manual : CookieSourceMode.Auto;
-    }
-
-    private static int CookieIndex(CookieSourceMode mode)
-    {
-        return mode == CookieSourceMode.Manual ? 1 : 0;
+            var settings = _monitor.Settings.GetProviderSettings(definition.Kind);
+            ProviderEditors.Add(new ProviderSettingsEditorState(definition, settings));
+        }
     }
 }
 
+public sealed class ProviderSettingsEditorState : INotifyPropertyChanged
+{
+    private bool _isEnabled;
+    private int _selectedSourceIndex;
+    private int _selectedCookieSourceIndex;
+    private string _cookieHeader;
+
+    public ProviderSettingsEditorState(ProviderDefinition definition, ProviderSettings settings)
+    {
+        Definition = definition;
+        SourceModes = definition.SupportedSourceModes.ToArray();
+        SourceOptions = SourceModes.Select(ProviderCatalog.GetSourceDisplayName).ToArray();
+        CookieSourceModes = new[] { CookieSourceMode.Auto, CookieSourceMode.Manual };
+        CookieSourceOptions = CookieSourceModes.Select(ProviderCatalog.GetCookieSourceDisplayName).ToArray();
+
+        _isEnabled = settings.Enabled;
+        _selectedSourceIndex = Array.IndexOf(SourceModes, settings.SourceMode);
+        if (_selectedSourceIndex < 0)
+        {
+            _selectedSourceIndex = 0;
+        }
+
+        _selectedCookieSourceIndex = Array.IndexOf(CookieSourceModes, settings.CookieSource);
+        if (_selectedCookieSourceIndex < 0)
+        {
+            _selectedCookieSourceIndex = 0;
+        }
+
+        _cookieHeader = settings.CookieHeader ?? string.Empty;
+    }
+
+    public ProviderDefinition Definition { get; }
+    public ProviderKind Provider => Definition.Kind;
+    public string SettingsTitle => Definition.SettingsTitle;
+    public string EnabledLabel => Definition.EnabledLabel;
+    public string SourceLabel => Definition.SourceLabel;
+    public string CookieSourceLabel => Definition.CookieSourceLabel;
+    public string CookieHeaderPlaceholder => Definition.CookieHeaderPlaceholder;
+    public string[] SourceOptions { get; }
+    public string[] CookieSourceOptions { get; }
+    public ProviderSourceMode[] SourceModes { get; }
+    public CookieSourceMode[] CookieSourceModes { get; }
+    public Visibility CookieControlsVisibility => Definition.SupportsCookieHeader ? Visibility.Visible : Visibility.Collapsed;
+
+    public bool IsEnabled
+    {
+        get => _isEnabled;
+        set => SetProperty(ref _isEnabled, value);
+    }
+
+    public int SelectedSourceIndex
+    {
+        get => _selectedSourceIndex;
+        set => SetProperty(ref _selectedSourceIndex, value);
+    }
+
+    public int SelectedCookieSourceIndex
+    {
+        get => _selectedCookieSourceIndex;
+        set
+        {
+            if (SetProperty(ref _selectedCookieSourceIndex, value))
+            {
+                OnPropertyChanged(nameof(IsCookieHeaderEditable));
+            }
+        }
+    }
+
+    public string CookieHeader
+    {
+        get => _cookieHeader;
+        set => SetProperty(ref _cookieHeader, value);
+    }
+
+    public ProviderSourceMode SelectedSourceMode =>
+        SelectedSourceIndex >= 0 && SelectedSourceIndex < SourceModes.Length
+            ? SourceModes[SelectedSourceIndex]
+            : ProviderSourceMode.Auto;
+
+    public CookieSourceMode SelectedCookieSourceMode =>
+        SelectedCookieSourceIndex >= 0 && SelectedCookieSourceIndex < CookieSourceModes.Length
+            ? CookieSourceModes[SelectedCookieSourceIndex]
+            : CookieSourceMode.Auto;
+
+    public bool IsCookieHeaderEditable =>
+        Definition.SupportsCookieHeader && SelectedCookieSourceMode == CookieSourceMode.Manual;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (Equals(field, value))
+        {
+            return false;
+        }
+
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}

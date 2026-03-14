@@ -55,17 +55,19 @@ public sealed class TrayMenuViewModel
 
     private static TrayMenuItem CreateProviderItem(ProviderUsageSnapshot snapshot)
     {
-        var providerName = snapshot.Provider.ToString();
+        var providerName = ProviderCatalog.GetDisplayName(snapshot.Provider);
 
         if (!string.IsNullOrWhiteSpace(snapshot.Error))
         {
             return TrayMenuItem.CreateProviderError(providerName, snapshot.Error);
         }
 
+        var definition = ProviderCatalog.GetDefinition(snapshot.Provider);
+
         return TrayMenuItem.CreateProvider(
             providerName,
-            CreateMetric(snapshot.Primary, "Session"),
-            CreateMetric(snapshot.Secondary, "Weekly"));
+            CreateMetric(snapshot.Primary, definition.PrimaryUsageLabel),
+            CreateMetric(snapshot.Secondary, definition.SecondaryUsageLabel));
     }
 
     private static TrayMenuMetric CreateMetric(UsageWindow? window, string fallbackLabel)
