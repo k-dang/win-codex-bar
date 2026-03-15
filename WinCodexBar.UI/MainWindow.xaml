@@ -80,18 +80,6 @@
 
                 <Border x:Name="ProviderPanel" Grid.Row="2" Style="{StaticResource AppCardStyle}">
                     <StackPanel Spacing="10">
-                        <Grid ColumnSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding SelectedProviderTitle}" Style="{StaticResource AppSubtleTextStyle}"/>
-                            <Button Grid.Column="1"
-                                    Content="Retry"
-                                    Tag="{Binding SelectedProviderSection.Provider}"
-                                    Click="RetryProvider_Click"
-                                    Style="{StaticResource AppGhostButtonStyle}"/>
-                        </Grid>
                         <TextBlock Text="No provider data"
                                    Style="{StaticResource AppSubtleTextStyle}"
                                    Visibility="{Binding SelectedProviderEmptyStateVisibility}"/>
@@ -114,7 +102,11 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding ProviderName}" Style="{StaticResource AppPrimarySubtitleTextStyle}"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding SourceLabel}" Style="{StaticResource AppSubtleTextStyle}"/>
+                                            <Button Grid.Column="1"
+                                                    Content="Retry"
+                                                    Tag="{Binding ProviderKind}"
+                                                    Click="RetryProvider_Click"
+                                                    Style="{StaticResource AppGhostButtonStyle}"/>
                                         </Grid>
 
                                         <StackPanel Grid.Row="1" Spacing="3">
