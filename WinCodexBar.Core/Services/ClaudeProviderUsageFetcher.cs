@@ -106,7 +106,6 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
         {
             Provider = ProviderKind.Claude,
             SourceLabel = "oauth",
-            AccountPlan = credentials.RateLimitTier,
             Primary = ToWindow(usage.FiveHour, "Session", 5 * 60),
             Secondary = ToWindow(usage.SevenDay, "Weekly", 7 * 24 * 60),
             UpdatedAt = DateTimeOffset.Now
@@ -129,7 +128,6 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
         {
             Provider = ProviderKind.Claude,
             SourceLabel = "web",
-            AccountEmail = usage.AccountEmail,
             Primary = new UsageWindow
             {
                 Label = "Session",
@@ -148,7 +146,6 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
                     ResetDescription = UsageWindowFormatter.FormatResetDescription(usage.WeeklyResetsAt)
                 }
                 : null,
-            CreditsText = usage.ExtraUsageText,
             UpdatedAt = DateTimeOffset.Now
         };
     }
@@ -165,8 +162,6 @@ public sealed class ClaudeProviderUsageFetcher : IProviderUsageFetcher
         {
             Provider = ProviderKind.Claude,
             SourceLabel = result.SourceLabel,
-            AccountEmail = result.AccountEmail,
-            AccountPlan = result.AccountPlan,
             Primary = result.Primary,
             Secondary = result.Secondary,
             UpdatedAt = DateTimeOffset.Now

@@ -88,13 +88,12 @@
                                       Visibility="{Binding SelectedProviderSnapshotsVisibility}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid RowSpacing="8" Margin="0,0,0,8">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                        <Grid RowSpacing="8" Margin="0,0,0,8">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
@@ -145,11 +144,6 @@
                                             <TextBlock Text="{Binding SecondaryReset}" Style="{StaticResource AppSubtleTextStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="3" Spacing="2">
-                                            <TextBlock Text="{Binding AccountLabel}" Style="{StaticResource AppSubtleTextStyle}"/>
-                                            <TextBlock Text="{Binding CreditsText}" Style="{StaticResource AppSubtleTextStyle}"/>
-                                            <TextBlock Text="{Binding ErrorText}" Foreground="{ThemeResource SystemErrorTextColor}"/>
-                                        </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

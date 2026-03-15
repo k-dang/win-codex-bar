@@ -260,65 +260,6 @@ internal static class CodexOAuthCredentialsStore
         File.WriteAllText(path, content);
     }
 
-    public static string? ResolveEmail(CodexOAuthCredentials credentials)
-    {
-        if (string.IsNullOrWhiteSpace(credentials.IdToken))
-        {
-            return null;
-        }
-
-        if (!TryParseJwt(credentials.IdToken, out var payload))
-        {
-            return null;
-        }
-
-        if (payload.TryGetProperty("email", out var emailElement))
-        {
-            return emailElement.GetString();
-        }
-
-        if (payload.TryGetProperty("https://api.openai.com/profile", out var profile) &&
-            profile.ValueKind == JsonValueKind.Object &&
-            profile.TryGetProperty("email", out var profileEmail))
-        {
-            return profileEmail.GetString();
-        }
-
-        return null;
-    }
-
-    public static string? ResolvePlan(CodexUsageResponse usage, CodexOAuthCredentials credentials)
-    {
-        if (!string.IsNullOrWhiteSpace(usage.PlanType))
-        {
-            return usage.PlanType;
-        }
-
-        if (string.IsNullOrWhiteSpace(credentials.IdToken))
-        {
-            return null;
-        }
-
-        if (!TryParseJwt(credentials.IdToken, out var payload))
-        {
-            return null;
-        }
-
-        if (payload.TryGetProperty("chatgpt_plan_type", out var plan))
-        {
-            return plan.GetString();
-        }
-
-        if (payload.TryGetProperty("https://api.openai.com/auth", out var auth) &&
-            auth.ValueKind == JsonValueKind.Object &&
-            auth.TryGetProperty("chatgpt_plan_type", out var authPlan))
-        {
-            return authPlan.GetString();
-        }
-
-        return null;
-    }
-
     private static string ResolveAuthPath()
     {
         var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME");
@@ -353,49 +294,6 @@ internal static class CodexOAuthCredentialsStore
         return null;
     }
 
-    private static bool TryParseJwt(string token, out JsonElement payload)
-    {
-        payload = default;
-        var parts = token.Split('.');
-        if (parts.Length < 2)
-        {
-            return false;
-        }
-
-        var json = Base64UrlDecode(parts[1]);
-        if (json == null)
-        {
-            return false;
-        }
-
-        using var doc = JsonDocument.Parse(json);
-        payload = doc.RootElement.Clone();
-        return true;
-    }
-
-    private static string? Base64UrlDecode(string input)
-    {
-        var padded = input.Replace('-', '+').Replace('_', '/');
-        switch (padded.Length % 4)
-        {
-            case 2:
-                padded += "==";
-                break;
-            case 3:
-                padded += "=";
-                break;
-        }
-
-        try
-        {
-            var data = Convert.FromBase64String(padded);
-            return Encoding.UTF8.GetString(data);
-        }
-        catch
-        {
-            return null;
-        }
-    }
 }
 
 internal static class CodexTokenRefresher
@@ -453,14 +351,8 @@ internal static class CodexTokenRefresher
 
 internal sealed class CodexUsageResponse
 {
-    [JsonPropertyName("plan_type")]
-    public string? PlanType { get; set; }
-
     [JsonPropertyName("rate_limit")]
     public CodexRateLimit? RateLimit { get; set; }
-
-    [JsonPropertyName("credits")]
-    public CodexCredits? Credits { get; set; }
 }
 
 internal sealed class CodexRateLimit
@@ -485,43 +377,6 @@ internal sealed class CodexUsageWindow
 
     [JsonIgnore]
     public int? WindowMinutes => WindowSeconds.HasValue ? WindowSeconds.Value / 60 : null;
-}
-
-internal sealed class CodexCredits
-{
-    [JsonPropertyName("has_credits")]
-    public bool HasCredits { get; set; }
-
-    [JsonPropertyName("unlimited")]
-    public bool Unlimited { get; set; }
-
-    [JsonPropertyName("balance")]
-    public JsonElement Balance { get; set; }
-
-    public string? ToDisplayText()
-    {
-        if (!HasCredits)
-        {
-            return null;
-        }
-
-        if (Unlimited)
-        {
-            return "Credits: Unlimited";
-        }
-
-        if (Balance.ValueKind == JsonValueKind.Number && Balance.TryGetDouble(out var value))
-        {
-            return $"Credits: {value:0.##}";
-        }
-
-        if (Balance.ValueKind == JsonValueKind.String && double.TryParse(Balance.GetString(), out var parsed))
-        {
-            return $"Credits: {parsed:0.##}";
-        }
-
-        return "Credits: Available";
-    }
 }
 
 internal static class CodexOAuthUsageFetcher
@@ -660,9 +515,6 @@ internal sealed class CodexCliResult
     public string SourceLabel { get; init; } = "codex-cli";
     public UsageWindow? Primary { get; init; }
     public UsageWindow? Secondary { get; init; }
-    public string? CreditsText { get; init; }
-    public string? AccountEmail { get; init; }
-    public string? AccountPlan { get; init; }
 }
 
 internal static class CodexCliClient
@@ -688,23 +540,16 @@ internal static class CodexCliClient
             await client.SendAsync(1, "initialize", new { client = new { name = "WinCodexBar", version = "0.1" } }, cancellationToken)
                 ;
 
-            var account = await client.SendAsync(2, "account/read", null, cancellationToken);
             var rateLimits = await client.SendAsync(3, "account/rateLimits/read", null, cancellationToken);
 
             var primary = ParseRateWindow(rateLimits, "primary_window", "primaryWindow", "primary");
             var secondary = ParseRateWindow(rateLimits, "secondary_window", "secondaryWindow", "secondary");
-            var creditsText = ParseCreditsText(rateLimits);
-            var email = ParseString(account, "email", "user_email");
-            var plan = ParseString(account, "plan", "plan_type", "account_plan");
 
             return new CodexCliResult
             {
                 SourceLabel = "codex-cli",
                 Primary = primary,
-                Secondary = secondary,
-                CreditsText = creditsText,
-                AccountEmail = email,
-                AccountPlan = plan
+                Secondary = secondary
             };
         }
         catch
@@ -759,39 +604,6 @@ internal static class CodexCliClient
             ResetsAt = resetsAt,
             ResetDescription = UsageWindowFormatter.FormatResetDescription(resetsAt)
         };
-    }
-
-    private static string? ParseCreditsText(JsonElement element)
-    {
-        if (TryGetChild(element, out var credits, "credits"))
-        {
-            var unlimited = GetBool(credits, "unlimited");
-            if (unlimited == true)
-            {
-                return "Credits: Unlimited";
-            }
-
-            var balance = GetDouble(credits, "balance", "remaining");
-            if (balance.HasValue)
-            {
-                return $"Credits: {balance.Value:0.##}";
-            }
-        }
-
-        return null;
-    }
-
-    private static string? ParseString(JsonElement element, params string[] names)
-    {
-        foreach (var name in names)
-        {
-            if (element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
-            {
-                return value.GetString();
-            }
-        }
-
-        return null;
     }
 
     private static double? ExtractPercent(string text, params string[] labels)
@@ -1176,9 +988,6 @@ internal sealed class ClaudeWebUsageResult
     public DateTimeOffset? SessionResetsAt { get; init; }
     public double? WeeklyPercentUsed { get; init; }
     public DateTimeOffset? WeeklyResetsAt { get; init; }
-    public string? AccountEmail { get; init; }
-    public string? LoginMethod { get; init; }
-    public string? ExtraUsageText { get; init; }
 }
 
 internal static class ClaudeWebApiFetcher
@@ -1196,18 +1005,12 @@ internal static class ClaudeWebApiFetcher
 
         var orgId = await FetchOrganizationIdAsync(httpClient, sessionKey, cancellationToken);
         var usage = await FetchUsageAsync(httpClient, sessionKey, orgId, cancellationToken);
-        var account = await FetchAccountAsync(httpClient, sessionKey, cancellationToken);
-        var extraUsage = await FetchExtraUsageAsync(httpClient, sessionKey, orgId, cancellationToken);
-
         return new ClaudeWebUsageResult
         {
             SessionPercentUsed = usage.SessionPercentUsed,
             SessionResetsAt = usage.SessionResetsAt,
             WeeklyPercentUsed = usage.WeeklyPercentUsed,
-            WeeklyResetsAt = usage.WeeklyResetsAt,
-            AccountEmail = account?.Email,
-            LoginMethod = account?.LoginMethod,
-            ExtraUsageText = extraUsage
+            WeeklyResetsAt = usage.WeeklyResetsAt
         };
     }
 
@@ -1273,66 +1076,6 @@ internal static class ClaudeWebApiFetcher
         };
     }
 
-    private static async Task<ClaudeWebAccount?> FetchAccountAsync(HttpClient httpClient, string sessionKey, CancellationToken cancellationToken)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "https://claude.ai/api/account");
-        request.Headers.Add("Cookie", $"sessionKey={sessionKey}");
-        request.Headers.Add("Accept", "application/json");
-
-        using var response = await httpClient.SendAsync(request, cancellationToken);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<ClaudeWebAccount>(json);
-    }
-
-    private static async Task<string?> FetchExtraUsageAsync(
-        HttpClient httpClient,
-        string sessionKey,
-        string orgId,
-        CancellationToken cancellationToken)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"https://claude.ai/api/organizations/{orgId}/overage_spend_limit");
-        request.Headers.Add("Cookie", $"sessionKey={sessionKey}");
-        request.Headers.Add("Accept", "application/json");
-
-        using var response = await httpClient.SendAsync(request, cancellationToken);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-            var enabled = GetBool(root, "is_enabled");
-            if (enabled != true)
-            {
-                return null;
-            }
-
-            var used = GetDouble(root, "used_credits");
-            var limit = GetDouble(root, "monthly_credit_limit");
-            var currency = GetString(root, "currency");
-
-            if (used.HasValue && limit.HasValue && !string.IsNullOrWhiteSpace(currency))
-            {
-                return $"Extra usage: {used.Value / 100:0.##}/{limit.Value / 100:0.##} {currency}";
-            }
-        }
-        catch
-        {
-            return null;
-        }
-
-        return null;
-    }
-
     private static string? ExtractSessionKey(string cookieHeader)
     {
         foreach (var pair in CookieHeaderParser.Parse(cookieHeader))
@@ -1363,23 +1106,6 @@ internal static class ClaudeWebApiFetcher
             value.TryGetDouble(out var parsed))
         {
             return parsed;
-        }
-
-        return null;
-    }
-
-    private static bool? GetBool(JsonElement element, string name)
-    {
-        if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value))
-        {
-            if (value.ValueKind == JsonValueKind.True)
-            {
-                return true;
-            }
-            if (value.ValueKind == JsonValueKind.False)
-            {
-                return false;
-            }
         }
 
         return null;
@@ -1417,13 +1143,6 @@ internal static class ClaudeWebApiFetcher
         public DateTimeOffset? WeeklyResetsAt { get; init; }
     }
 
-    private sealed class ClaudeWebAccount
-    {
-        [JsonPropertyName("email_address")]
-        public string? Email { get; set; }
-
-        public string? LoginMethod { get; set; }
-    }
 }
 
 internal sealed class ClaudeCliResult
@@ -1431,8 +1150,6 @@ internal sealed class ClaudeCliResult
     public string SourceLabel { get; init; } = "claude-cli";
     public UsageWindow? Primary { get; init; }
     public UsageWindow? Secondary { get; init; }
-    public string? AccountEmail { get; init; }
-    public string? AccountPlan { get; init; }
 }
 
 internal static class ClaudeCliClient

@@ -116,11 +116,8 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
         {
             Provider = ProviderKind.Codex,
             SourceLabel = "oauth",
-            AccountEmail = CodexOAuthCredentialsStore.ResolveEmail(credentials),
-            AccountPlan = CodexOAuthCredentialsStore.ResolvePlan(usage, credentials),
             Primary = ToWindow(primary, "Session"),
             Secondary = ToWindow(secondary, "Weekly"),
-            CreditsText = usage.Credits?.ToDisplayText(),
             UpdatedAt = DateTimeOffset.Now
         };
     }
@@ -143,7 +140,6 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
             SourceLabel = "web",
             Primary = ToWindow(usage.RateLimit?.PrimaryWindow, "Session"),
             Secondary = ToWindow(usage.RateLimit?.SecondaryWindow, "Weekly"),
-            CreditsText = usage.Credits?.ToDisplayText(),
             UpdatedAt = DateTimeOffset.Now
         };
     }
@@ -160,11 +156,8 @@ public sealed class CodexProviderUsageFetcher : IProviderUsageFetcher
         {
             Provider = ProviderKind.Codex,
             SourceLabel = result.SourceLabel,
-            AccountEmail = result.AccountEmail,
-            AccountPlan = result.AccountPlan,
             Primary = result.Primary,
             Secondary = result.Secondary,
-            CreditsText = result.CreditsText,
             UpdatedAt = DateTimeOffset.Now
         };
     }

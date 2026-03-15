@@ -26,11 +26,8 @@ public sealed class ProviderUsageSnapshot
 {
     public ProviderKind Provider { get; init; } = ProviderKind.Unknown;
     public string SourceLabel { get; init; } = "unknown";
-    public string? AccountEmail { get; init; }
-    public string? AccountPlan { get; init; }
     public UsageWindow? Primary { get; init; }
     public UsageWindow? Secondary { get; init; }
-    public string? CreditsText { get; init; }
     public string? Error { get; init; }
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.Now;
 }

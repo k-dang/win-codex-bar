@@ -190,7 +190,6 @@ public sealed class ProviderUsageRow
     public ProviderKind ProviderKind { get; init; }
     public string ProviderName { get; init; } = string.Empty;
     public string SourceLabel { get; init; } = string.Empty;
-    public string? AccountLabel { get; init; }
     public string PrimaryLabel { get; init; } = "Session";
     public double PrimaryPercent { get; init; }
     public bool PrimaryIndeterminate { get; init; }
@@ -201,25 +200,18 @@ public sealed class ProviderUsageRow
     public bool SecondaryIndeterminate { get; init; }
     public string SecondaryPercentText { get; init; } = string.Empty;
     public string SecondaryReset { get; init; } = string.Empty;
-    public string? CreditsText { get; init; }
-    public string? ErrorText { get; init; }
-    public bool HasError { get; init; }
 
     public static ProviderUsageRow FromSnapshot(ProviderUsageSnapshot snapshot)
     {
         var definition = ProviderCatalog.GetDefinition(snapshot.Provider);
         var primary = snapshot.Primary;
         var secondary = snapshot.Secondary;
-        var account = !string.IsNullOrWhiteSpace(snapshot.AccountEmail)
-            ? snapshot.AccountEmail
-            : snapshot.AccountPlan;
 
         return new ProviderUsageRow
         {
             ProviderKind = snapshot.Provider,
             ProviderName = definition.DisplayName,
             SourceLabel = snapshot.SourceLabel,
-            AccountLabel = account,
             PrimaryLabel = primary?.Label ?? definition.PrimaryUsageLabel,
             PrimaryPercent = primary?.UsedPercent ?? 0,
             PrimaryIndeterminate = primary?.UsedPercent == null,
@@ -229,10 +221,7 @@ public sealed class ProviderUsageRow
             SecondaryPercent = secondary?.UsedPercent ?? 0,
             SecondaryIndeterminate = secondary?.UsedPercent == null,
             SecondaryPercentText = FormatPercent(secondary?.UsedPercent),
-            SecondaryReset = secondary?.ResetDescription ?? string.Empty,
-            CreditsText = snapshot.CreditsText,
-            ErrorText = snapshot.Error,
-            HasError = !string.IsNullOrWhiteSpace(snapshot.Error)
+            SecondaryReset = secondary?.ResetDescription ?? string.Empty
         };
     }
 
