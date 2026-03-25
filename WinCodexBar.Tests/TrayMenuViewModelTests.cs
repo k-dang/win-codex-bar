@@ -85,4 +85,35 @@ public class TrayMenuViewModelTests
         Assert.Contains(viewModel.Items, item => item.Kind == TrayMenuItemKind.Open && item.Text == "Open");
         Assert.Contains(viewModel.Items, item => item.Kind == TrayMenuItemKind.Exit && item.Text == "Exit");
     }
+
+    [Fact]
+    public void Update_OrdersProviderItemsByProvider()
+    {
+        var viewModel = new TrayMenuViewModel();
+        var summary = new UsageSummary();
+        summary.ProviderSnapshots.Add(new ProviderUsageSnapshot { Provider = ProviderKind.Claude });
+        summary.ProviderSnapshots.Add(new ProviderUsageSnapshot { Provider = ProviderKind.Codex });
+
+        viewModel.Update(summary);
+
+        Assert.Equal("Codex", viewModel.Items[0].Text);
+        Assert.Equal("Claude Code", viewModel.Items[1].Text);
+    }
+
+    [Fact]
+    public void ActivateItem_RaisesRequestedEventsForActionItems()
+    {
+        var viewModel = new TrayMenuViewModel();
+        var openRaised = false;
+        var exitRaised = false;
+        viewModel.OpenRequested += (_, _) => openRaised = true;
+        viewModel.ExitRequested += (_, _) => exitRaised = true;
+
+        viewModel.ActivateItem(new TrayMenuItem(TrayMenuItemKind.Open, "Open"));
+        viewModel.ActivateItem(new TrayMenuItem(TrayMenuItemKind.Exit, "Exit"));
+        viewModel.ActivateItem(new TrayMenuItem(TrayMenuItemKind.Provider, "Codex"));
+
+        Assert.True(openRaised);
+        Assert.True(exitRaised);
+    }
 }

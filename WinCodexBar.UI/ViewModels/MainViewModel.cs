@@ -233,9 +233,6 @@ public sealed class ProviderUsageRow
 
 public sealed class DiagnosticsLogRow
 {
-    private static readonly SolidColorBrush ErrorBrush = new(Microsoft.UI.Colors.Red);
-    private static readonly SolidColorBrush NormalBrush = new(Microsoft.UI.Colors.White);
-
     public string TimestampText { get; init; } = string.Empty;
     public ProviderKind? ProviderKind { get; init; }
     public string ProviderName { get; init; } = string.Empty;
@@ -244,7 +241,7 @@ public sealed class DiagnosticsLogRow
     public string Message { get; init; } = string.Empty;
     public string DurationText { get; init; } = string.Empty;
     public bool IsError { get; init; }
-    public Brush MessageForeground { get; init; } = NormalBrush;
+    public Brush? MessageForeground { get; init; }
 
     public static DiagnosticsLogRow FromEntry(DiagnosticsLogEntry entry)
     {
@@ -263,7 +260,7 @@ public sealed class DiagnosticsLogRow
             Message = entry.Message,
             DurationText = duration,
             IsError = isError,
-            MessageForeground = isError ? ErrorBrush : NormalBrush
+            MessageForeground = CreateBrush(isError ? (byte)255 : (byte)255, isError ? (byte)0 : (byte)255, isError ? (byte)0 : (byte)255)
         };
     }
 
@@ -278,5 +275,17 @@ public sealed class DiagnosticsLogRow
             DiagnosticsEventType.RefreshCompleted => "Completed",
             _ => eventType.ToString()
         };
+    }
+
+    private static Brush? CreateBrush(byte red, byte green, byte blue)
+    {
+        try
+        {
+            return new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, red, green, blue));
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

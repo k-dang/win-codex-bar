@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WinCodexBar.Core\WinCodexBar.Core.csproj" />
-    <ProjectReference Include="..\WinCodexBar.UI\WinCodexBar.UI.csproj" />
+    <ProjectReference Include="..\WinCodexBar.UI\WinCodexBar.UI.csproj" AdditionalProperties="IsTestBuild=true;Platform=x64;PublishProfile=" />
   </ItemGroup>
 
 </Project>
