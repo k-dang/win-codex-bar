@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using System.Linq;
 using Microsoft.UI.Dispatching;
 using WinCodexBar.Core.Models;
 using WinCodexBar.Core.Services;
@@ -10,7 +9,7 @@ namespace WinCodexBar.UI.Services;
 public sealed class UsageMonitor
 {
     private readonly SettingsStore _settingsStore;
-    private readonly ProviderUsageService _providerUsageService;
+    private readonly IUsageRefreshPipeline _usageRefreshPipeline;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly DispatcherQueueTimer _timer;
     private readonly IDiagnosticsLogger? _diagnosticsLogger;
@@ -18,12 +17,12 @@ public sealed class UsageMonitor
 
     public UsageMonitor(
         SettingsStore settingsStore,
-        ProviderUsageService providerUsageService,
+        IUsageRefreshPipeline usageRefreshPipeline,
         DispatcherQueue dispatcherQueue,
         IDiagnosticsLogger? diagnosticsLogger = null)
     {
         _settingsStore = settingsStore;
-        _providerUsageService = providerUsageService;
+        _usageRefreshPipeline = usageRefreshPipeline;
         _dispatcherQueue = dispatcherQueue;
         _diagnosticsLogger = diagnosticsLogger;
 
@@ -46,36 +45,13 @@ public sealed class UsageMonitor
 
     public async Task RefreshAsync()
     {
-        var providerSnapshots = await _providerUsageService.FetchAsync(_settings);
-        var summary = new UsageSummary
-        {
-            LastUpdated = DateTimeOffset.Now
-        };
-        summary.ProviderSnapshots.AddRange(providerSnapshots);
-        Summary = summary;
+        Summary = await _usageRefreshPipeline.RefreshAsync(_settings);
         _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, Summary));
     }
 
     public async Task RefreshProviderAsync(ProviderKind provider)
     {
-        var snapshot = await _providerUsageService.FetchProviderAsync(_settings, provider);
-        if (snapshot == null)
-        {
-            return;
-        }
-
-        var summary = new UsageSummary
-        {
-            LastUpdated = DateTimeOffset.Now
-        };
-
-        foreach (var existing in Summary.ProviderSnapshots.Where(item => item.Provider != provider))
-        {
-            summary.ProviderSnapshots.Add(existing);
-        }
-
-        summary.ProviderSnapshots.Add(snapshot);
-        Summary = summary;
+        Summary = await _usageRefreshPipeline.RefreshProviderAsync(_settings, Summary, provider);
         _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, Summary));
     }
 

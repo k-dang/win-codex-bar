@@ -41,8 +41,8 @@ public partial class App
         var settingsStore = new SettingsStore();
 
         _diagnosticsLogger = new DiagnosticsLogger();
-        var providerUsageService = new ProviderUsageService(logger: _diagnosticsLogger);
-        _monitor = new UsageMonitor(settingsStore, providerUsageService, dispatcher, _diagnosticsLogger);
+        var usageRefreshPipeline = UsageRefreshPipeline.CreateDefault(logger: _diagnosticsLogger);
+        _monitor = new UsageMonitor(settingsStore, usageRefreshPipeline, dispatcher, _diagnosticsLogger);
 
         _window = new MainWindow(_monitor);
         _window.Activate();
