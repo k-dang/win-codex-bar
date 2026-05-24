@@ -67,7 +67,7 @@
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="6">
                             <TextBlock Text="Refresh Interval (minutes)" Style="{StaticResource AppSubtleTextStyle}"/>
-                            <NumberBox x:Name="SettingsRefreshMinutesBox" Minimum="1" Maximum="120" />
+                            <NumberBox Minimum="1" Maximum="120" Value="{Binding RefreshMinutes, Mode=TwoWay}" />
                         </StackPanel>
 
                         <ItemsControl ItemsSource="{Binding ProviderEditors}">

@@ -38,7 +38,7 @@ public partial class App
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         var dispatcher = DispatcherQueue.GetForCurrentThread();
-        var settingsStore = new SettingsStore();
+        var settingsStore = FileAppSettingsStore.CreateDefault();
 
         _diagnosticsLogger = new DiagnosticsLogger();
         var usageRefreshPipeline = UsageRefreshPipeline.CreateDefault(logger: _diagnosticsLogger);

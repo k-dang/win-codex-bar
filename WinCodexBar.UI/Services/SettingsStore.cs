@@ -6,7 +6,14 @@ using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.UI.Services;
 
-public class SettingsStore
+public interface IAppSettingsStore
+{
+    Task<AppSettings> LoadAsync();
+
+    Task<AppSettings> SaveAsync(AppSettings settings);
+}
+
+public sealed class FileAppSettingsStore : IAppSettingsStore
 {
     private const string SettingsFileName = "settings.json";
 
@@ -22,18 +29,35 @@ public class SettingsStore
         WriteIndented = true
     };
 
+    private readonly string _settingsPath;
+
+    public FileAppSettingsStore(string settingsPath)
+    {
+        if (string.IsNullOrWhiteSpace(settingsPath))
+        {
+            throw new ArgumentException("Settings path is required.", nameof(settingsPath));
+        }
+
+        _settingsPath = settingsPath;
+    }
+
+    public static FileAppSettingsStore CreateDefault()
+    {
+        return new FileAppSettingsStore(SettingsPath);
+    }
+
     public async Task<AppSettings> LoadAsync()
     {
         AppSettings defaults = AppSettings.CreateDefault();
 
         try
         {
-            if (!File.Exists(SettingsPath))
+            if (!File.Exists(_settingsPath))
             {
                 return defaults;
             }
 
-            var json = await File.ReadAllTextAsync(SettingsPath);
+            var json = await File.ReadAllTextAsync(_settingsPath);
             if (string.IsNullOrWhiteSpace(json))
             {
                 return defaults;
@@ -60,7 +84,7 @@ public class SettingsStore
         }
     }
 
-    public async Task SaveAsync(AppSettings settings)
+    public async Task<AppSettings> SaveAsync(AppSettings settings)
     {
         if (settings == null)
         {
@@ -70,7 +94,13 @@ public class SettingsStore
         settings.NormalizeProviders();
 
         var json = JsonSerializer.Serialize(settings, SerializerOptions);
-        Directory.CreateDirectory(SettingsDirectoryPath);
-        await File.WriteAllTextAsync(SettingsPath, json);
+        var directory = Path.GetDirectoryName(_settingsPath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllTextAsync(_settingsPath, json);
+        return settings;
     }
 }

@@ -8,7 +8,7 @@ namespace WinCodexBar.UI.Services;
 
 public sealed class UsageMonitor
 {
-    private readonly SettingsStore _settingsStore;
+    private readonly IAppSettingsStore _settingsStore;
     private readonly IUsageRefreshPipeline _usageRefreshPipeline;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly DispatcherQueueTimer _timer;
@@ -16,7 +16,7 @@ public sealed class UsageMonitor
     private AppSettings _settings = AppSettings.CreateDefault();
 
     public UsageMonitor(
-        SettingsStore settingsStore,
+        IAppSettingsStore settingsStore,
         IUsageRefreshPipeline usageRefreshPipeline,
         DispatcherQueue dispatcherQueue,
         IDiagnosticsLogger? diagnosticsLogger = null)
@@ -38,8 +38,7 @@ public sealed class UsageMonitor
 
     public async Task InitializeAsync()
     {
-        _settings = await _settingsStore.LoadAsync();
-        ConfigureTimer();
+        ApplySettings(await _settingsStore.LoadAsync());
         await RefreshAsync();
     }
 
@@ -57,8 +56,12 @@ public sealed class UsageMonitor
 
     public async Task SaveSettingsAsync(AppSettings settings)
     {
+        ApplySettings(await _settingsStore.SaveAsync(settings));
+    }
+
+    private void ApplySettings(AppSettings settings)
+    {
         _settings = settings;
-        await _settingsStore.SaveAsync(settings);
         ConfigureTimer();
     }
 
