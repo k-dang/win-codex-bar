@@ -61,6 +61,8 @@
                         </StackPanel>
 
                         <Button Grid.Column="1"
+                                AutomationProperties.AutomationId="SettingsButton"
+                                AutomationProperties.Name="Settings"
                                 Click="Settings_Click"
                                 Style="{StaticResource AppGhostButtonStyle}"
                                 ToolTipService.ToolTip="Settings">
@@ -75,7 +77,9 @@
                         Background="{StaticResource AppCardBackgroundBrush}"
                         BorderBrush="{StaticResource AppCardStrokeBrush}"
                         BorderThickness="1">
-                    <SelectorBar x:Name="ProviderSelector" SelectionChanged="ProviderSelector_SelectionChanged"/>
+                    <SelectorBar x:Name="ProviderSelector"
+                                 AutomationProperties.AutomationId="ProviderSelector"
+                                 SelectionChanged="ProviderSelector_SelectionChanged"/>
                 </Border>
 
                 <Border x:Name="ProviderPanel" Grid.Row="2" Style="{StaticResource AppCardStyle}">
@@ -102,6 +106,8 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding ProviderName}" Style="{StaticResource AppPrimarySubtitleTextStyle}"/>
                                             <Button Grid.Column="1"
+                                                    AutomationProperties.AutomationId="RetryProviderButton"
+                                                    AutomationProperties.Name="Retry provider refresh"
                                                     Content="Retry"
                                                     Tag="{Binding ProviderKind}"
                                                     Click="RetryProvider_Click"
@@ -165,7 +171,11 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Diagnostics log" Style="{StaticResource AppSubtleTextStyle}" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="DiagnosticsFilterComboBox" Grid.Column="1" SelectedIndex="0" SelectionChanged="DiagnosticsFilterComboBox_SelectionChanged"/>
+                            <ComboBox x:Name="DiagnosticsFilterComboBox"
+                                      AutomationProperties.AutomationId="DiagnosticsFilterComboBox"
+                                      Grid.Column="1"
+                                      SelectedIndex="0"
+                                      SelectionChanged="DiagnosticsFilterComboBox_SelectionChanged"/>
                         </Grid>
 
                         <Border Grid.Row="1"
@@ -207,7 +217,7 @@
                                             <TextBlock Grid.Column="1" Text="{Binding ProviderName}"/>
                                             <TextBlock Grid.Column="2" Text="{Binding EventTypeName}"/>
                                             <TextBlock Grid.Column="3" Text="{Binding SourceMethod}"/>
-                                            <TextBlock Grid.Column="4" Text="{Binding Message}" TextTrimming="CharacterEllipsis" Foreground="{Binding MessageForeground}"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding Message}" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Grid.Column="5" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12"/>
                                         </Grid>
                                     </DataTemplate>

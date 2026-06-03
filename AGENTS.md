@@ -14,8 +14,11 @@ Shared/core logic lives under `WinCodexBar.Core/` with models in `WinCodexBar.Co
 ## Build, Test, and Development Commands
 
 - `dotnet restore WinCodexBar.UI/WinCodexBar.UI.csproj` restores dependencies.
-- `dotnet build WinCodexBar.UI/WinCodexBar.UI.csproj -r win-x64` builds the WinUI app.
+- `dotnet build WinCodexBar.UI/WinCodexBar.UI.csproj -p:Platform=x64 -r win-x64` builds the WinUI app with the expected platform.
 - `dotnet test WinCodexBar.Tests/WinCodexBar.Tests.csproj` runs the unit tests.
+- `./BuildAndRun.ps1 -Detach` builds and launches the packaged WinUI app through `winapp run`; use `-SkipRun` for build-only validation.
+
+Do not run the built `WinCodexBar.exe` directly for app verification. Use Visual Studio, `winapp run`, or `BuildAndRun.ps1` so the packaged WinUI launch path is exercised.
 
 ## Coding Style & Naming Conventions
 

@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.UI.ViewModels;
@@ -241,7 +240,6 @@ public sealed class DiagnosticsLogRow
     public string Message { get; init; } = string.Empty;
     public string DurationText { get; init; } = string.Empty;
     public bool IsError { get; init; }
-    public Brush? MessageForeground { get; init; }
 
     public static DiagnosticsLogRow FromEntry(DiagnosticsLogEntry entry)
     {
@@ -259,8 +257,7 @@ public sealed class DiagnosticsLogRow
             SourceMethod = entry.SourceMethod ?? string.Empty,
             Message = entry.Message,
             DurationText = duration,
-            IsError = isError,
-            MessageForeground = CreateBrush(isError ? (byte)255 : (byte)255, isError ? (byte)0 : (byte)255, isError ? (byte)0 : (byte)255)
+            IsError = isError
         };
     }
 
@@ -275,17 +272,5 @@ public sealed class DiagnosticsLogRow
             DiagnosticsEventType.RefreshCompleted => "Completed",
             _ => eventType.ToString()
         };
-    }
-
-    private static Brush? CreateBrush(byte red, byte green, byte blue)
-    {
-        try
-        {
-            return new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, red, green, blue));
-        }
-        catch
-        {
-            return null;
-        }
     }
 }

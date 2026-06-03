@@ -6,6 +6,7 @@ using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using WinCodexBar.UI.ViewModels;
@@ -176,6 +177,8 @@ public sealed partial class TrayMenuWindow : Window
                         Style = (Style)Application.Current.Resources["TrayMenuActionButtonStyle"],
                         Tag = item
                     };
+                    AutomationProperties.SetAutomationId(button, $"{item.Kind}TrayMenuButton");
+                    AutomationProperties.SetName(button, item.Text);
                     button.Click += ActionButton_Click;
                     MenuItemsHost.Children.Add(button);
                     break;

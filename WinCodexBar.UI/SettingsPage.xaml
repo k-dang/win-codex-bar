@@ -57,8 +57,8 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <Button Content="Cancel" Style="{StaticResource AppGhostButtonStyle}" Click="Cancel_Click"/>
-                            <Button Content="Save" Style="{StaticResource AppPrimaryButtonStyle}" Click="Save_Click"/>
+                            <Button AutomationProperties.AutomationId="CancelSettingsButton" Content="Cancel" Style="{StaticResource AppGhostButtonStyle}" Click="Cancel_Click"/>
+                            <Button AutomationProperties.AutomationId="SaveSettingsButton" Content="Save" Style="{StaticResource AppPrimaryButtonStyle}" Click="Save_Click"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -67,7 +67,7 @@
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="6">
                             <TextBlock Text="Refresh Interval (minutes)" Style="{StaticResource AppSubtleTextStyle}"/>
-                            <NumberBox Minimum="1" Maximum="120" Value="{Binding RefreshMinutes, Mode=TwoWay}" />
+                            <NumberBox AutomationProperties.AutomationId="RefreshMinutesNumberBox" Minimum="1" Maximum="120" Value="{Binding RefreshMinutes, Mode=TwoWay}" />
                         </StackPanel>
 
                         <ItemsControl ItemsSource="{Binding ProviderEditors}">
@@ -75,16 +75,18 @@
                                 <DataTemplate>
                                     <StackPanel Spacing="6">
                                         <TextBlock Text="{Binding SettingsTitle}" Style="{StaticResource AppSectionHeaderStyle}"/>
-                                        <CheckBox Content="{Binding EnabledLabel}" IsChecked="{Binding IsEnabled, Mode=TwoWay}"/>
+                                        <CheckBox AutomationProperties.AutomationId="ProviderEnabledCheckBox" Content="{Binding EnabledLabel}" IsChecked="{Binding IsEnabled, Mode=TwoWay}"/>
                                         <TextBlock Text="{Binding SourceLabel}" Style="{StaticResource AppSubtleTextStyle}"/>
-                                        <ComboBox ItemsSource="{Binding SourceOptions}" SelectedIndex="{Binding SelectedSourceIndex, Mode=TwoWay}"/>
+                                        <ComboBox AutomationProperties.AutomationId="ProviderSourceComboBox" ItemsSource="{Binding SourceOptions}" SelectedIndex="{Binding SelectedSourceIndex, Mode=TwoWay}"/>
                                         <TextBlock Text="{Binding CookieSourceLabel}"
                                                    Style="{StaticResource AppSubtleTextStyle}"
                                                    Visibility="{Binding CookieControlsVisibility}"/>
-                                        <ComboBox ItemsSource="{Binding CookieSourceOptions}"
+                                        <ComboBox AutomationProperties.AutomationId="CookieSourceComboBox"
+                                                  ItemsSource="{Binding CookieSourceOptions}"
                                                   SelectedIndex="{Binding SelectedCookieSourceIndex, Mode=TwoWay}"
                                                   Visibility="{Binding CookieControlsVisibility}"/>
-                                        <TextBox Text="{Binding CookieHeader, Mode=TwoWay}"
+                                        <TextBox AutomationProperties.AutomationId="CookieHeaderTextBox"
+                                                 Text="{Binding CookieHeader, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  PlaceholderText="{Binding CookieHeaderPlaceholder}"
                                                  Visibility="{Binding CookieControlsVisibility}"
                                                  IsEnabled="{Binding IsCookieHeaderEditable}"/>

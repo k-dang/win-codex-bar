@@ -28,18 +28,27 @@ Win Codex Bar is a WinUI 3 desktop tray app for monitoring Codex and Claude Code
 
 - Windows 10 1809+ (`10.0.17763.0` minimum).
 - .NET 10 SDK.
+- WinApp CLI for local packaged-app launch with `BuildAndRun.ps1` (`winget install Microsoft.WinAppCLI`).
 
 ## Build and Test
 
 ```powershell
 dotnet restore WinCodexBar.UI/WinCodexBar.UI.csproj
-dotnet build WinCodexBar.UI/WinCodexBar.UI.csproj -r win-x64
+dotnet build WinCodexBar.UI/WinCodexBar.UI.csproj -p:Platform=x64 -r win-x64
 dotnet test WinCodexBar.Tests/WinCodexBar.Tests.csproj
 ```
 
 ## Run Locally
 
-Open `WinCodexBar.UI/WinCodexBar.slnx` (or `WinCodexBar.UI/WinCodexBar.UI.csproj`) in Visual Studio and run the app.
+Use the WinUI packaged-app launch path:
+
+```powershell
+./BuildAndRun.ps1 -Detach
+```
+
+Use `./BuildAndRun.ps1 -SkipRun` for build-only validation. You can also open `WinCodexBar.UI/WinCodexBar.slnx` (or `WinCodexBar.UI/WinCodexBar.UI.csproj`) in Visual Studio and run the app.
+
+Do not run the built `WinCodexBar.exe` directly for verification; packaged WinUI apps should be launched with Visual Studio, `winapp run`, or `BuildAndRun.ps1`.
 
 ## Provider Setup
 
