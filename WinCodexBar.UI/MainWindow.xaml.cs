@@ -21,8 +21,8 @@ public sealed partial class MainWindow
     private const string DiagnosticsSectionTag = "Diagnostics";
     private const string DiagnosticsAllProvidersTag = "All";
     private const int DefaultWindowWidth = 420;
-    private const int DefaultWindowHeight = 500;
-    private const int MinWindowHeight = 420;
+    private const int DefaultWindowHeight = 580;
+    private const int MinWindowHeight = DefaultWindowHeight;
     private const int MaxWindowHeight = 720;
     private const int WindowChromeHeight = 8;
     private readonly UsageMonitor _monitor;

@@ -189,6 +189,9 @@ public sealed class ProviderUsageRow
     public ProviderKind ProviderKind { get; init; }
     public string ProviderName { get; init; } = string.Empty;
     public string SourceLabel { get; init; } = string.Empty;
+    public string ErrorText { get; init; } = string.Empty;
+    public Visibility ErrorVisibility => string.IsNullOrWhiteSpace(ErrorText) ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility UsageMetricsVisibility => string.IsNullOrWhiteSpace(ErrorText) ? Visibility.Visible : Visibility.Collapsed;
     public string PrimaryLabel { get; init; } = "Session";
     public double PrimaryPercent { get; init; }
     public bool PrimaryIndeterminate { get; init; }
@@ -211,6 +214,7 @@ public sealed class ProviderUsageRow
             ProviderKind = snapshot.Provider,
             ProviderName = definition.DisplayName,
             SourceLabel = snapshot.SourceLabel,
+            ErrorText = snapshot.Error ?? string.Empty,
             PrimaryLabel = primary?.Label ?? definition.PrimaryUsageLabel,
             PrimaryPercent = primary?.UsedPercent ?? 0,
             PrimaryIndeterminate = primary?.UsedPercent == null,

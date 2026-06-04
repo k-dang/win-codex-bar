@@ -114,7 +114,15 @@
                                                     Style="{StaticResource AppGhostButtonStyle}"/>
                                         </Grid>
 
-                                        <StackPanel Grid.Row="1" Spacing="3">
+                                        <TextBlock Grid.Row="1"
+                                                   Text="{Binding ErrorText}"
+                                                   TextWrapping="Wrap"
+                                                   Style="{StaticResource AppSubtleTextStyle}"
+                                                   Visibility="{Binding ErrorVisibility}"/>
+
+                                        <StackPanel Grid.Row="1"
+                                                    Spacing="3"
+                                                    Visibility="{Binding UsageMetricsVisibility}">
                                             <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
@@ -132,7 +140,9 @@
                                             <TextBlock Text="{Binding PrimaryReset}" Style="{StaticResource AppSubtleTextStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="2" Spacing="3">
+                                        <StackPanel Grid.Row="2"
+                                                    Spacing="3"
+                                                    Visibility="{Binding UsageMetricsVisibility}">
                                             <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>

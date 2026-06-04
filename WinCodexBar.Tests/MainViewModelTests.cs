@@ -61,6 +61,29 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public void Update_WhenProviderSnapshotHasError_ShowsErrorRowAndKeepsSnapshotVisible()
+    {
+        var viewModel = new MainViewModel();
+        var summary = new UsageSummary();
+        summary.ProviderSnapshots.Add(new ProviderUsageSnapshot
+        {
+            Provider = ProviderKind.Codex,
+            SourceLabel = "auto",
+            Error = "OAuth failed Web failed"
+        });
+
+        viewModel.Update(summary);
+
+        var row = Assert.Single(viewModel.SelectedProviderSnapshots);
+        Assert.Equal(ProviderKind.Codex, row.ProviderKind);
+        Assert.Equal("OAuth failed Web failed", row.ErrorText);
+        Assert.Equal(Visibility.Visible, row.ErrorVisibility);
+        Assert.Equal(Visibility.Collapsed, row.UsageMetricsVisibility);
+        Assert.Equal(Visibility.Visible, viewModel.SelectedProviderSnapshotsVisibility);
+        Assert.Equal(Visibility.Collapsed, viewModel.SelectedProviderEmptyStateVisibility);
+    }
+
+    [Fact]
     public void AddDiagnosticsEntry_TrimsRowsAndFiltersByProvider()
     {
         var viewModel = new MainViewModel();
