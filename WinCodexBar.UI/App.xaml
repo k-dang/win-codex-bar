@@ -31,17 +31,13 @@
                              Color="{ThemeResource ControlStrokeColorDefault}"
                              Opacity="0.45"/>
             <SolidColorBrush x:Key="TrayMenuBackgroundBrush"
-                             Color="{ThemeResource CardBackgroundFillColorDefault}"
-                             Opacity="0.97"/>
+                             Color="{ThemeResource CardBackgroundFillColorDefault}"/>
             <SolidColorBrush x:Key="TrayMenuBorderBrush"
-                             Color="{ThemeResource CardStrokeColorDefault}"
-                             Opacity="0.85"/>
+                             Color="{ThemeResource CardStrokeColorDefault}"/>
             <SolidColorBrush x:Key="TrayMenuSeparatorBrush"
-                             Color="{ThemeResource DividerStrokeColorDefault}"
-                             Opacity="0.7"/>
+                             Color="{ThemeResource DividerStrokeColorDefault}"/>
             <SolidColorBrush x:Key="TrayMenuMeterTrackBrush"
-                             Color="{ThemeResource ControlStrongFillColorDefault}"
-                             Opacity="0.4"/>
+                             Color="{ThemeResource ControlStrongFillColorDefault}"/>
 
             <Style x:Key="AppTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
                 <Setter Property="FontSize" Value="24"/>
@@ -106,12 +102,12 @@
             </Style>
             <Style x:Key="TrayMenuMetricLabelTextStyle" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
-                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="FontSize" Value="12"/>
                 <Setter Property="LineHeight" Value="14"/>
             </Style>
             <Style x:Key="TrayMenuMetricPercentTextStyle" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
-                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="FontSize" Value="12"/>
                 <Setter Property="LineHeight" Value="14"/>
             </Style>
             <Style x:Key="TrayMenuProgressBarStyle" TargetType="ProgressBar">

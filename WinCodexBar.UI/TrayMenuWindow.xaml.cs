@@ -23,6 +23,7 @@ public sealed partial class TrayMenuWindow : Window
     private const int GWL_HWNDPARENT = -8;
     private const int WH_MOUSE_LL = 14;
     private const int WM_LBUTTONDOWN = 0x0201;
+    private const int WM_RBUTTONDOWN = 0x0204;
     private const int WM_MBUTTONDOWN = 0x0207;
     private const int WM_XBUTTONDOWN = 0x020B;
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
@@ -163,8 +164,7 @@ public sealed partial class TrayMenuWindow : Window
                         Text = item.Text,
                         Style = (Style)Application.Current.Resources["TrayMenuInfoTextStyle"],
                         TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(12, 7, 12, 7),
-                        Opacity = item.IsEnabled ? 1.0 : 0.72
+                        Margin = new Thickness(12, 7, 12, 7)
                     });
                     break;
                 case TrayMenuItemKind.Open:
@@ -214,8 +214,7 @@ public sealed partial class TrayMenuWindow : Window
             {
                 Text = item.ErrorText,
                 Style = (Style)Application.Current.Resources["TrayMenuInfoTextStyle"],
-                TextWrapping = TextWrapping.Wrap,
-                Opacity = 0.82
+                TextWrapping = TextWrapping.Wrap
             });
 
             return panel;
@@ -238,8 +237,7 @@ public sealed partial class TrayMenuWindow : Window
     {
         var grid = new Grid
         {
-            ColumnSpacing = 8,
-            Opacity = metric.PercentValue.HasValue ? 1.0 : 0.62
+            ColumnSpacing = 8
         };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -261,6 +259,8 @@ public sealed partial class TrayMenuWindow : Window
             Value = ClampPercent(metric.PercentValue),
             VerticalAlignment = VerticalAlignment.Center
         };
+        AutomationProperties.SetName(progressBar, metric.Label);
+        AutomationProperties.SetHelpText(progressBar, metric.PercentText);
         Grid.SetColumn(progressBar, 1);
         grid.Children.Add(progressBar);
 
@@ -362,6 +362,7 @@ public sealed partial class TrayMenuWindow : Window
     {
         var message = wParam.ToInt32();
         return message == WM_LBUTTONDOWN ||
+               message == WM_RBUTTONDOWN ||
                message == WM_MBUTTONDOWN ||
                message == WM_XBUTTONDOWN;
     }
@@ -373,13 +374,15 @@ public sealed partial class TrayMenuWindow : Window
             return;
         }
 
-        RootGrid.Measure(new Windows.Foundation.Size(MenuWidth, double.PositiveInfinity));
-        var desiredHeight = (int)Math.Ceiling(RootGrid.DesiredSize.Height);
-        var menuHeight = Math.Max(desiredHeight, 1);
-        _appWindow.Resize(new Windows.Graphics.SizeInt32(MenuWidth, menuHeight));
-
         var displayArea = DisplayArea.GetFromPoint(new Windows.Graphics.PointInt32(screenX, screenY), DisplayAreaFallback.Nearest);
         var workArea = displayArea.WorkArea;
+        var maxHeight = Math.Max(1, workArea.Height - (MenuOffset * 2));
+
+        MenuScrollViewer.MaxHeight = maxHeight;
+        RootGrid.Measure(new Windows.Foundation.Size(MenuWidth, maxHeight));
+        var desiredHeight = (int)Math.Ceiling(RootGrid.DesiredSize.Height);
+        var menuHeight = Math.Clamp(desiredHeight, 1, maxHeight);
+        _appWindow.Resize(new Windows.Graphics.SizeInt32(MenuWidth, menuHeight));
 
         var x = screenX;
         var y = screenY - menuHeight - MenuOffset;

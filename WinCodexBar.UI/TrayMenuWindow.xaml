@@ -14,7 +14,11 @@
           IsTabStop="True"
           Background="{StaticResource TrayMenuBackgroundBrush}">
         <Border x:Name="MenuCard" Style="{StaticResource TrayMenuCardStyle}">
-            <StackPanel x:Name="MenuItemsHost" Spacing="0" />
+            <ScrollViewer x:Name="MenuScrollViewer"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="MenuItemsHost" Spacing="0" />
+            </ScrollViewer>
         </Border>
     </Grid>
 </Window>
