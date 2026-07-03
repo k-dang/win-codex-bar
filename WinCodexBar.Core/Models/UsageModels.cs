@@ -4,7 +4,8 @@ public enum ProviderKind
 {
     Unknown = 0,
     Codex = 1,
-    Claude = 2
+    Claude = 2,
+    Cursor = 3
 }
 
 public sealed class UsageSummary

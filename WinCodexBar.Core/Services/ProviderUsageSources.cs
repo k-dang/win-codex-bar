@@ -13,7 +13,9 @@ internal static class ProviderUsageSourceFactory
             new CodexCliUsageSource(),
             new ClaudeOAuthUsageSource(httpClient),
             new ClaudeWebUsageSource(httpClient),
-            new ClaudeCliUsageSource()
+            new ClaudeCliUsageSource(),
+            new CursorAppTokenUsageSource(httpClient),
+            new CursorWebUsageSource(httpClient)
         };
     }
 }
@@ -63,31 +65,54 @@ internal sealed class CodexOAuthUsageSource : IProviderUsageSource
     }
 }
 
-internal sealed class CodexWebUsageSource : IProviderUsageSource
+// Web sources share the rule that manual-cookie mode must be selected and populated
+// before any request is attempted; a null fall-through lets the pipeline try other sources.
+internal abstract class ManualCookieUsageSource : IProviderUsageSource
 {
-    private readonly HttpClient _httpClient;
-
-    public CodexWebUsageSource(HttpClient httpClient)
+    protected ManualCookieUsageSource(HttpClient httpClient)
     {
-        _httpClient = httpClient;
+        HttpClient = httpClient;
     }
 
-    public ProviderKind Provider => ProviderKind.Codex;
+    protected HttpClient HttpClient { get; }
+
+    public abstract ProviderKind Provider { get; }
     public ProviderSourceMode SourceMode => ProviderSourceMode.Web;
 
-    public async Task<ProviderUsageSnapshot?> FetchAsync(
+    public Task<ProviderUsageSnapshot?> FetchAsync(
         ProviderUsageSourceRequest request,
         CancellationToken cancellationToken)
     {
         var settings = request.ProviderSettings;
         if (settings.CookieSource != CookieSourceMode.Manual || string.IsNullOrWhiteSpace(settings.CookieHeader))
         {
-            return null;
+            return Task.FromResult<ProviderUsageSnapshot?>(null);
         }
 
+        return FetchWithCookieAsync(settings.CookieHeader, cancellationToken);
+    }
+
+    protected abstract Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken);
+}
+
+internal sealed class CodexWebUsageSource : ManualCookieUsageSource
+{
+    public CodexWebUsageSource(HttpClient httpClient)
+        : base(httpClient)
+    {
+    }
+
+    public override ProviderKind Provider => ProviderKind.Codex;
+
+    protected override async Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken)
+    {
         var usage = await CodexOAuthUsageFetcher.FetchUsageWithCookiesAsync(
-            _httpClient,
-            settings.CookieHeader,
+            HttpClient,
+            cookieHeader,
             cancellationToken);
 
         return new ProviderUsageSnapshot
@@ -165,31 +190,22 @@ internal sealed class ClaudeOAuthUsageSource : IProviderUsageSource
     }
 }
 
-internal sealed class ClaudeWebUsageSource : IProviderUsageSource
+internal sealed class ClaudeWebUsageSource : ManualCookieUsageSource
 {
-    private readonly HttpClient _httpClient;
-
     public ClaudeWebUsageSource(HttpClient httpClient)
+        : base(httpClient)
     {
-        _httpClient = httpClient;
     }
 
-    public ProviderKind Provider => ProviderKind.Claude;
-    public ProviderSourceMode SourceMode => ProviderSourceMode.Web;
+    public override ProviderKind Provider => ProviderKind.Claude;
 
-    public async Task<ProviderUsageSnapshot?> FetchAsync(
-        ProviderUsageSourceRequest request,
+    protected override async Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
+        string cookieHeader,
         CancellationToken cancellationToken)
     {
-        var settings = request.ProviderSettings;
-        if (settings.CookieSource != CookieSourceMode.Manual || string.IsNullOrWhiteSpace(settings.CookieHeader))
-        {
-            return null;
-        }
-
         var usage = await ClaudeWebApiFetcher.FetchUsageAsync(
-            _httpClient,
-            settings.CookieHeader,
+            HttpClient,
+            cookieHeader,
             cancellationToken);
 
         return new ProviderUsageSnapshot
@@ -242,6 +258,66 @@ internal sealed class ClaudeCliUsageSource : IProviderUsageSource
             Secondary = result.Secondary,
             UpdatedAt = DateTimeOffset.Now
         };
+    }
+}
+
+internal sealed class CursorAppTokenUsageSource : IProviderUsageSource
+{
+    private readonly HttpClient _httpClient;
+    private readonly ICursorLocalTokenReader _tokenReader;
+
+    public CursorAppTokenUsageSource(HttpClient httpClient, ICursorLocalTokenReader? tokenReader = null)
+    {
+        _httpClient = httpClient;
+        _tokenReader = tokenReader ?? new CursorStateDbTokenReader();
+    }
+
+    public ProviderKind Provider => ProviderKind.Cursor;
+    public ProviderSourceMode SourceMode => ProviderSourceMode.OAuth;
+
+    public async Task<ProviderUsageSnapshot?> FetchAsync(
+        ProviderUsageSourceRequest request,
+        CancellationToken cancellationToken)
+    {
+        // The SQLite read is synchronous file I/O and the pipeline is awaited on the
+        // UI thread, so push it off the caller's thread.
+        var token = await Task.Run(_tokenReader.ReadAccessToken, cancellationToken);
+        var session = CursorAppSession.TryCreate(token, DateTimeOffset.UtcNow);
+        if (session == null)
+        {
+            return null;
+        }
+
+        var usage = await CursorWebApiFetcher.FetchUsageAsync(
+            _httpClient,
+            session.CookieHeader,
+            session.UserId,
+            cancellationToken);
+
+        return CursorUsageMapper.ToSnapshot(usage, "app");
+    }
+}
+
+internal sealed class CursorWebUsageSource : ManualCookieUsageSource
+{
+    public CursorWebUsageSource(HttpClient httpClient)
+        : base(httpClient)
+    {
+    }
+
+    public override ProviderKind Provider => ProviderKind.Cursor;
+
+    protected override async Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken)
+    {
+        var usage = await CursorWebApiFetcher.FetchUsageAsync(
+            HttpClient,
+            cookieHeader,
+            knownUserId: null,
+            cancellationToken);
+
+        return CursorUsageMapper.ToSnapshot(usage, "web");
     }
 }
 

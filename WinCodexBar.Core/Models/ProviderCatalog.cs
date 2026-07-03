@@ -4,6 +4,7 @@ public sealed class ProviderDefinition
 {
     public ProviderKind Kind { get; init; } = ProviderKind.Unknown;
     public string DisplayName { get; init; } = string.Empty;
+    public bool EnabledByDefault { get; init; } = true;
     public string UsageTitle { get; init; } = string.Empty;
     public string SettingsTitle { get; init; } = string.Empty;
     public string EnabledLabel { get; init; } = string.Empty;
@@ -57,6 +58,23 @@ public static class ProviderCatalog
             CookieHeaderPlaceholder = "Claude cookie header (manual)",
             PrimaryUsageLabel = "Session",
             SecondaryUsageLabel = "Weekly"
+        },
+        new ProviderDefinition
+        {
+            Kind = ProviderKind.Cursor,
+            DisplayName = "Cursor",
+            EnabledByDefault = false,
+            UsageTitle = "Cursor usage",
+            SettingsTitle = "Cursor Provider",
+            EnabledLabel = "Enable Cursor usage",
+            SourceLabel = "Cursor source",
+            // OAuth is the local Cursor.app token read from state.vscdb; Web is the manual cookie.
+            SupportedSourceModes = new[] { ProviderSourceMode.Auto, ProviderSourceMode.OAuth, ProviderSourceMode.Web },
+            SupportsCookieHeader = true,
+            CookieSourceLabel = "Cursor cookie source",
+            CookieHeaderPlaceholder = "Cursor cookie header (manual)",
+            PrimaryUsageLabel = "Total",
+            SecondaryUsageLabel = "Auto"
         }
     };
 

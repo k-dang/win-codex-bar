@@ -13,7 +13,23 @@ public class ProviderCatalogTests
         Assert.Equal("Unknown", definition.DisplayName);
         Assert.Equal("Unknown usage", definition.UsageTitle);
         Assert.True(definition.SupportsCookieHeader);
+        Assert.True(definition.EnabledByDefault);
         Assert.Contains(ProviderSourceMode.Auto, definition.SupportedSourceModes);
+    }
+
+    [Fact]
+    public void GetDefinition_Cursor_UsesTotalAutoLabelsAndDefaultDisabled()
+    {
+        var definition = ProviderCatalog.GetDefinition(ProviderKind.Cursor);
+
+        Assert.Equal("Cursor", definition.DisplayName);
+        Assert.Equal("Total", definition.PrimaryUsageLabel);
+        Assert.Equal("Auto", definition.SecondaryUsageLabel);
+        Assert.False(definition.EnabledByDefault);
+        Assert.True(definition.SupportsCookieHeader);
+        Assert.Equal(
+            new[] { ProviderSourceMode.Auto, ProviderSourceMode.OAuth, ProviderSourceMode.Web },
+            definition.SupportedSourceModes);
     }
 
     [Theory]
@@ -43,5 +59,15 @@ public class ProviderCatalogTests
         Assert.Equal(ProviderSourceMode.Auto, settings.SourceMode);
         Assert.Equal(CookieSourceMode.Auto, settings.CookieSource);
         Assert.Null(settings.CookieHeader);
+    }
+
+    [Fact]
+    public void CreateDefaultProviderSettings_DefaultDisabledProvider_ProducesDisabledSettings()
+    {
+        var settings = ProviderSettings.CreateDefault(ProviderKind.Cursor);
+
+        Assert.False(settings.Enabled);
+        Assert.Equal(ProviderSourceMode.Auto, settings.SourceMode);
+        Assert.Equal(CookieSourceMode.Auto, settings.CookieSource);
     }
 }

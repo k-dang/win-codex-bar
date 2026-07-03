@@ -17,7 +17,18 @@ public class AppSettingsTests
         {
             Assert.True(settings.Providers.ContainsKey(provider));
             Assert.NotNull(settings.Providers[provider]);
+            Assert.Equal(ProviderCatalog.GetDefinition(provider).EnabledByDefault, settings.Providers[provider].Enabled);
         }
+    }
+
+    [Fact]
+    public void CreateDefault_CursorDisabledWhileExistingProvidersEnabled()
+    {
+        var settings = AppSettings.CreateDefault();
+
+        Assert.False(settings.Providers[ProviderKind.Cursor].Enabled);
+        Assert.True(settings.Providers[ProviderKind.Codex].Enabled);
+        Assert.True(settings.Providers[ProviderKind.Claude].Enabled);
     }
 
     [Fact]

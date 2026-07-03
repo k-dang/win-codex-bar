@@ -428,3 +428,6 @@ FodyWeavers.xsd
 *.msp
 
 .idea
+
+# opensrc - source code for packages
+opensrc/

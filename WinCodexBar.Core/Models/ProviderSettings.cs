@@ -23,11 +23,9 @@ public sealed class ProviderSettings
 
     public static ProviderSettings CreateDefault(ProviderKind provider)
     {
-        _ = ProviderCatalog.GetDefinition(provider);
-
         return new ProviderSettings
         {
-            Enabled = true,
+            Enabled = ProviderCatalog.GetDefinition(provider).EnabledByDefault,
             SourceMode = ProviderSourceMode.Auto,
             CookieSource = CookieSourceMode.Auto
         };

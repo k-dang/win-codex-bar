@@ -80,7 +80,7 @@ internal static class CodexOAuthCredentialsStore
             var refresh = GetString(tokens, "refresh_token") ?? string.Empty;
             var idToken = GetString(tokens, "id_token");
             var accountId = GetString(tokens, "account_id");
-            var lastRefresh = ParseIsoDate(GetString(root, "last_refresh"));
+            var lastRefresh = IsoDate.Parse(GetString(root, "last_refresh"));
 
             return new CodexOAuthCredentials
             {
@@ -135,21 +135,6 @@ internal static class CodexOAuthCredentialsStore
         return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
-    }
-
-    private static DateTimeOffset? ParseIsoDate(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
-        {
-            return parsed;
-        }
-
-        return null;
     }
 
 }
@@ -795,22 +780,7 @@ internal sealed class ClaudeOAuthWindow
     public string? ResetsAtRaw { get; set; }
 
     [JsonIgnore]
-    public DateTimeOffset? ResetsAt => ParseIso(ResetsAtRaw);
-
-    private static DateTimeOffset? ParseIso(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
-        {
-            return parsed;
-        }
-
-        return null;
-    }
+    public DateTimeOffset? ResetsAt => IsoDate.Parse(ResetsAtRaw);
 }
 
 internal static class ClaudeOAuthUsageFetcher
@@ -921,9 +891,9 @@ internal static class ClaudeWebApiFetcher
         var sevenDay = root.TryGetProperty("seven_day", out var weekly) ? weekly : default;
 
         var sessionUtil = GetDouble(fiveHour, "utilization") ?? 0;
-        var sessionResetsAt = ParseIsoDate(GetString(fiveHour, "resets_at"));
+        var sessionResetsAt = IsoDate.Parse(GetString(fiveHour, "resets_at"));
         var weeklyUtil = GetDouble(sevenDay, "utilization");
-        var weeklyResetsAt = ParseIsoDate(GetString(sevenDay, "resets_at"));
+        var weeklyResetsAt = IsoDate.Parse(GetString(sevenDay, "resets_at"));
 
         return new ClaudeWebUsagePayload
         {
@@ -962,21 +932,6 @@ internal static class ClaudeWebApiFetcher
             element.TryGetProperty(name, out var value) &&
             value.ValueKind == JsonValueKind.Number &&
             value.TryGetDouble(out var parsed))
-        {
-            return parsed;
-        }
-
-        return null;
-    }
-
-    private static DateTimeOffset? ParseIsoDate(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
         {
             return parsed;
         }
