@@ -54,7 +54,9 @@ public sealed partial class MainWindow
         PopulateProviderSelector();
         PopulateDiagnosticsFilterComboBox();
         ViewModel.Update(_monitor.Summary);
+        ViewModel.SetRefreshing(_monitor.IsRefreshing);
         _monitor.SummaryUpdated += OnSummaryUpdated;
+        _monitor.RefreshStateChanged += OnRefreshStateChanged;
 
         TrySetThinAcrylicBackdrop();
         UpdateTitleBarStyle(RootGrid.ActualTheme);
@@ -92,6 +94,11 @@ public sealed partial class MainWindow
     {
         ViewModel.Update(summary);
         ScheduleResizeToContentHeight();
+    }
+
+    private void OnRefreshStateChanged(object? sender, bool isRefreshing)
+    {
+        ViewModel.SetRefreshing(isRefreshing);
     }
 
     private async void RetryProvider_Click(object sender, RoutedEventArgs e)
@@ -348,6 +355,9 @@ public sealed partial class MainWindow
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
+        _monitor.SummaryUpdated -= OnSummaryUpdated;
+        _monitor.RefreshStateChanged -= OnRefreshStateChanged;
+
         if (_acrylicController != null)
         {
             _acrylicController.Dispose();

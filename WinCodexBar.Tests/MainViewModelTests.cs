@@ -17,6 +17,24 @@ public class MainViewModelTests
         Assert.Equal(viewModel.ProviderSections[0], viewModel.SelectedProviderSection);
         Assert.Equal(Visibility.Visible, viewModel.SelectedProviderEmptyStateVisibility);
         Assert.Equal(Visibility.Collapsed, viewModel.SelectedProviderSnapshotsVisibility);
+        Assert.True(viewModel.IsProviderRefreshEnabled);
+    }
+
+    [Fact]
+    public void SetRefreshing_UpdatesProviderRefreshEnabledState()
+    {
+        var viewModel = new MainViewModel();
+        var changedProperties = new List<string?>();
+        viewModel.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName);
+
+        viewModel.SetRefreshing(isRefreshing: true);
+
+        Assert.False(viewModel.IsProviderRefreshEnabled);
+        Assert.Contains(nameof(MainViewModel.IsProviderRefreshEnabled), changedProperties);
+
+        viewModel.SetRefreshing(isRefreshing: false);
+
+        Assert.True(viewModel.IsProviderRefreshEnabled);
     }
 
     [Fact]

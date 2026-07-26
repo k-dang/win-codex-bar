@@ -43,6 +43,7 @@ public partial class App
         _diagnosticsLogger = new DiagnosticsLogger();
         var usageRefreshPipeline = UsageRefreshPipeline.CreateDefault(logger: _diagnosticsLogger);
         _monitor = new UsageMonitor(settingsStore, usageRefreshPipeline, dispatcher, _diagnosticsLogger);
+        var initializationTask = _monitor.InitializeAsync();
 
         _window = new MainWindow(_monitor);
         _window.Activate();
@@ -67,7 +68,7 @@ public partial class App
         _trayService.MenuRequested += (_, request) => ShowTrayMenu(request);
         _monitor.SummaryUpdated += (_, summary) => UpdateTraySummary(summary);
 
-        _ = _monitor.InitializeAsync();
+        _ = initializationTask;
     }
 
     private void ShowMainWindow()

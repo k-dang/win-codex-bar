@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Dispatching;
 using WinCodexBar.Core.Models;
@@ -13,7 +14,9 @@ public sealed class UsageMonitor
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly DispatcherQueueTimer _timer;
     private readonly IDiagnosticsLogger? _diagnosticsLogger;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private AppSettings _settings = AppSettings.CreateDefault();
+    private int _refreshRequestCount;
 
     public UsageMonitor(
         IAppSettingsStore settingsStore,
@@ -34,24 +37,27 @@ public sealed class UsageMonitor
 
     public AppSettings Settings => _settings;
     public UsageSummary Summary { get; private set; } = new();
+    public bool IsRefreshing => Volatile.Read(ref _refreshRequestCount) > 0;
     public event EventHandler<UsageSummary>? SummaryUpdated;
+    public event EventHandler<bool>? RefreshStateChanged;
 
     public async Task InitializeAsync()
     {
-        ApplySettings(await _settingsStore.LoadAsync());
-        await RefreshAsync();
+        await ExecuteRefreshAsync(async () =>
+        {
+            ApplySettings(await _settingsStore.LoadAsync());
+            return await _usageRefreshPipeline.RefreshAsync(_settings);
+        });
     }
 
     public async Task RefreshAsync()
     {
-        Summary = await _usageRefreshPipeline.RefreshAsync(_settings);
-        _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, Summary));
+        await ExecuteRefreshAsync(() => _usageRefreshPipeline.RefreshAsync(_settings));
     }
 
     public async Task RefreshProviderAsync(ProviderKind provider)
     {
-        Summary = await _usageRefreshPipeline.RefreshProviderAsync(_settings, Summary, provider);
-        _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, Summary));
+        await ExecuteRefreshAsync(() => _usageRefreshPipeline.RefreshProviderAsync(_settings, Summary, provider));
     }
 
     public async Task SaveSettingsAsync(AppSettings settings)
@@ -71,6 +77,35 @@ public sealed class UsageMonitor
         var minutes = Math.Max(1, _settings.RefreshMinutes);
         _timer.Interval = TimeSpan.FromMinutes(minutes);
         _timer.Start();
+    }
+
+    private async Task ExecuteRefreshAsync(Func<Task<UsageSummary>> refresh)
+    {
+        if (Interlocked.Increment(ref _refreshRequestCount) == 1)
+        {
+            PublishRefreshState(isRefreshing: true);
+        }
+
+        await _refreshGate.WaitAsync();
+        try
+        {
+            var summary = await refresh();
+            Summary = summary;
+            _dispatcherQueue.TryEnqueue(() => SummaryUpdated?.Invoke(this, summary));
+        }
+        finally
+        {
+            _refreshGate.Release();
+            if (Interlocked.Decrement(ref _refreshRequestCount) == 0)
+            {
+                PublishRefreshState(isRefreshing: false);
+            }
+        }
+    }
+
+    private void PublishRefreshState(bool isRefreshing)
+    {
+        _dispatcherQueue.TryEnqueue(() => RefreshStateChanged?.Invoke(this, isRefreshing));
     }
 }
 

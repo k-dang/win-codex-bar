@@ -14,6 +14,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private readonly Dictionary<ProviderKind, List<ProviderUsageRow>> _providerRows = new();
     private ProviderSectionOption? _selectedProviderSection;
     private ProviderKind? _selectedDiagnosticsProvider;
+    private bool _isRefreshing;
 
     public MainViewModel()
     {
@@ -57,6 +58,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public string SelectedProviderTitle => SelectedProviderSection?.UsageTitle ?? "Provider usage";
 
+    public bool IsProviderRefreshEnabled => !_isRefreshing;
+
     public Visibility SelectedProviderSnapshotsVisibility =>
         SelectedProviderSnapshots.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
 
@@ -69,6 +72,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         SelectedProviderSection = ProviderSections.FirstOrDefault(section => section.Provider == provider)
             ?? SelectedProviderSection;
+    }
+
+    public void SetRefreshing(bool isRefreshing)
+    {
+        if (_isRefreshing == isRefreshing)
+        {
+            return;
+        }
+
+        _isRefreshing = isRefreshing;
+        OnPropertyChanged(nameof(IsProviderRefreshEnabled));
     }
 
     public void AddDiagnosticsEntry(DiagnosticsLogEntry entry)
