@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI;
@@ -10,6 +11,7 @@ using Microsoft.UI.Xaml.Controls;
 using WinCodexBar.Core.Models;
 using WinCodexBar.UI.Services;
 using WinCodexBar.UI.ViewModels;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
 using WinRT;
 using WinRT.Interop;
@@ -53,6 +55,9 @@ public sealed partial class MainWindow
         RootGrid.DataContext = ViewModel;
         PopulateProviderSelector();
         PopulateDiagnosticsFilterComboBox();
+        OpenLogFolderButton.Visibility = string.IsNullOrWhiteSpace(_monitor.DiagnosticsLogger?.LogFilePath)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         ViewModel.Update(_monitor.Summary);
         ViewModel.SetRefreshing(_monitor.IsRefreshing);
         _monitor.SummaryUpdated += OnSummaryUpdated;
@@ -142,6 +147,35 @@ public sealed partial class MainWindow
         }
 
         ScheduleResizeToContentHeight();
+    }
+
+    private void CopyDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        var text = string.Join(
+            Environment.NewLine,
+            ViewModel.FilteredDiagnosticsEntries.Select(row => row.ToClipboardText()));
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        var package = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
+        package.SetText(text);
+        Clipboard.SetContent(package);
+    }
+
+    private async void OpenLogFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var logFilePath = _monitor.DiagnosticsLogger?.LogFilePath;
+        var directory = Path.GetDirectoryName(logFilePath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(directory);
+        await Windows.System.Launcher.LaunchFolderPathAsync(directory);
     }
 
     private void DiagnosticsFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

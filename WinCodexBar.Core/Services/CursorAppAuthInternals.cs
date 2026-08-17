@@ -12,11 +12,13 @@ internal interface ICursorLocalTokenReader
 
 internal sealed class CursorStateDbTokenReader : ICursorLocalTokenReader
 {
+    public static string StateDbPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Cursor", "User", "globalStorage", "state.vscdb");
+
     public string? ReadAccessToken()
     {
-        var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Cursor", "User", "globalStorage", "state.vscdb");
+        var dbPath = StateDbPath;
 
         if (!File.Exists(dbPath))
         {

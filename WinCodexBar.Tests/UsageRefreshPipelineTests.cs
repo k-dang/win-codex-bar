@@ -185,6 +185,53 @@ public class UsageRefreshPipelineTests
             logger.Events);
     }
 
+    [Fact]
+    public async Task RefreshAsync_WhenSourceReturnsNull_LogsTheReasonItRecorded()
+    {
+        var settings = AppSettings.CreateDefault();
+        settings.GetProviderSettings(ProviderKind.Claude).Enabled = false;
+        settings.GetProviderSettings(ProviderKind.Cursor).Enabled = false;
+        var logger = new RecordingLogger();
+        var pipeline = new UsageRefreshPipeline(
+            [
+                new FakeSource(ProviderKind.Codex, ProviderSourceMode.OAuth, request =>
+                {
+                    request.Diagnostics.Note("Codex auth file not found at C:\\auth.json.");
+                    return null;
+                })
+            ],
+            logger,
+            new FakeClock());
+
+        await pipeline.RefreshAsync(settings);
+
+        var detail = Assert.Single(logger.FailureDetails);
+        Assert.Equal("Codex auth file not found at C:\\auth.json.", detail);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WhenSourceThrows_LogsExceptionChainAsDetail()
+    {
+        var settings = AppSettings.CreateDefault();
+        settings.GetProviderSettings(ProviderKind.Claude).Enabled = false;
+        settings.GetProviderSettings(ProviderKind.Cursor).Enabled = false;
+        var logger = new RecordingLogger();
+        var pipeline = new UsageRefreshPipeline(
+            [
+                new FakeSource(ProviderKind.Codex, ProviderSourceMode.OAuth, _ =>
+                    throw new InvalidOperationException("OAuth failed", new HttpRequestException("no route to host")))
+            ],
+            logger,
+            new FakeClock());
+
+        await pipeline.RefreshAsync(settings);
+
+        var detail = Assert.Single(logger.FailureDetails);
+        Assert.NotNull(detail);
+        Assert.Contains("exception: InvalidOperationException: OAuth failed", detail);
+        Assert.Contains("caused by: HttpRequestException: no route to host", detail);
+    }
+
     private static ProviderUsageSnapshot Snapshot(ProviderKind provider, string sourceLabel)
     {
         return new ProviderUsageSnapshot
@@ -253,6 +300,9 @@ public class UsageRefreshPipelineTests
     private sealed class RecordingLogger : IDiagnosticsLogger
     {
         public List<string> Events { get; } = new();
+        public List<string?> FailureDetails { get; } = new();
+
+        public string? LogFilePath => null;
 
         public event EventHandler<DiagnosticsLogEntry>? EntryAdded
         {
@@ -260,7 +310,7 @@ public class UsageRefreshPipelineTests
             remove { }
         }
 
-        public void LogAttempt(ProviderKind provider, string sourceMethod, string message)
+        public void LogAttempt(ProviderKind provider, string sourceMethod, string message, string? detail = null)
         {
             Events.Add($"attempt:{provider}:{sourceMethod}");
         }
@@ -270,9 +320,10 @@ public class UsageRefreshPipelineTests
             Events.Add($"success:{provider}:{sourceMethod}");
         }
 
-        public void LogFailure(ProviderKind provider, string sourceMethod, string message, TimeSpan duration)
+        public void LogFailure(ProviderKind provider, string sourceMethod, string message, TimeSpan duration, string? detail = null)
         {
             Events.Add($"failure:{provider}:{sourceMethod}");
+            FailureDetails.Add(detail);
         }
 
         public void LogRefreshStarted()

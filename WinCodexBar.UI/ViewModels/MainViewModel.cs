@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -5,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
 using WinCodexBar.Core.Models;
+using WinCodexBar.Core.Services;
 
 namespace WinCodexBar.UI.ViewModels;
 
@@ -248,16 +250,44 @@ public sealed class ProviderUsageRow
     }
 }
 
-public sealed class DiagnosticsLogRow
+public sealed class DiagnosticsLogRow : INotifyPropertyChanged
 {
+    private bool _isDetailExpanded;
+
     public string TimestampText { get; init; } = string.Empty;
     public ProviderKind? ProviderKind { get; init; }
     public string ProviderName { get; init; } = string.Empty;
     public string EventTypeName { get; init; } = string.Empty;
     public string SourceMethod { get; init; } = string.Empty;
     public string Message { get; init; } = string.Empty;
+    public string Detail { get; init; } = string.Empty;
     public string DurationText { get; init; } = string.Empty;
     public bool IsError { get; init; }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public bool HasDetail => Detail.Length > 0;
+
+    public Visibility DetailToggleVisibility => HasDetail ? Visibility.Visible : Visibility.Collapsed;
+
+    public bool IsDetailExpanded
+    {
+        get => _isDetailExpanded;
+        set
+        {
+            if (_isDetailExpanded == value)
+            {
+                return;
+            }
+
+            _isDetailExpanded = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDetailExpanded)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DetailVisibility)));
+        }
+    }
+
+    public Visibility DetailVisibility =>
+        HasDetail && _isDetailExpanded ? Visibility.Visible : Visibility.Collapsed;
 
     public static DiagnosticsLogRow FromEntry(DiagnosticsLogEntry entry)
     {
@@ -271,24 +301,28 @@ public sealed class DiagnosticsLogRow
             TimestampText = entry.Timestamp.ToString("HH:mm:ss.fff"),
             ProviderKind = entry.Provider,
             ProviderName = entry.Provider.HasValue ? ProviderCatalog.GetDisplayName(entry.Provider.Value) : string.Empty,
-            EventTypeName = FormatEventType(entry.EventType),
+            EventTypeName = DiagnosticsEventLabel.For(entry.EventType),
             SourceMethod = entry.SourceMethod ?? string.Empty,
             Message = entry.Message,
+            Detail = entry.Detail ?? string.Empty,
             DurationText = duration,
             IsError = isError
         };
     }
 
-    private static string FormatEventType(DiagnosticsEventType eventType)
+    public string ToClipboardText()
     {
-        return eventType switch
+        var scope = string.Join("/", new[] { ProviderName, SourceMethod }.Where(part => part.Length > 0));
+        var header = string.Join(
+            " ",
+            new[] { TimestampText, EventTypeName, scope, DurationText, Message }
+                .Where(part => !string.IsNullOrEmpty(part)));
+
+        if (!HasDetail)
         {
-            DiagnosticsEventType.FetchAttempt => "Attempt",
-            DiagnosticsEventType.FetchSuccess => "Success",
-            DiagnosticsEventType.FetchFailure => "Failure",
-            DiagnosticsEventType.RefreshStarted => "Started",
-            DiagnosticsEventType.RefreshCompleted => "Completed",
-            _ => eventType.ToString()
-        };
+            return header;
+        }
+
+        return header + Environment.NewLine + DiagnosticsDetail.Indent(Detail);
     }
 }

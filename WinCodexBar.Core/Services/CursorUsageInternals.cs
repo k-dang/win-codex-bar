@@ -196,11 +196,12 @@ internal static class CursorWebApiFetcher
         HttpClient httpClient,
         string cookieHeader,
         string? knownUserId,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken)
     {
         // /api/auth/me and /api/usage are best-effort extras; their failure never fails
         // the refresh, so the chain safely runs alongside the primary usage-summary request.
-        var requestQuotaTask = TryFetchRequestQuotaChainAsync(httpClient, cookieHeader, knownUserId, cancellationToken);
+        var requestQuotaTask = TryFetchRequestQuotaChainAsync(httpClient, cookieHeader, knownUserId, diagnostics, cancellationToken);
         var summary = await FetchUsageSummaryAsync(httpClient, cookieHeader, cancellationToken);
 
         return new CursorWebUsageResult(summary, await requestQuotaTask);
@@ -210,14 +211,19 @@ internal static class CursorWebApiFetcher
         HttpClient httpClient,
         string cookieHeader,
         string? knownUserId,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken)
     {
         // The app-token source already knows the user id from the JWT; only the
         // manual-cookie path needs to resolve it via /api/auth/me.
-        var userId = knownUserId ?? await TryFetchUserIdAsync(httpClient, cookieHeader, cancellationToken);
-        return string.IsNullOrWhiteSpace(userId)
-            ? null
-            : await TryFetchRequestQuotaAsync(httpClient, cookieHeader, userId, cancellationToken);
+        var userId = knownUserId ?? await TryFetchUserIdAsync(httpClient, cookieHeader, diagnostics, cancellationToken);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            diagnostics.Note("Skipped the Cursor request-quota lookup: no user id available.");
+            return null;
+        }
+
+        return await TryFetchRequestQuotaAsync(httpClient, cookieHeader, userId, diagnostics, cancellationToken);
     }
 
     private static async Task<CursorUsageSummary> FetchUsageSummaryAsync(
@@ -231,32 +237,39 @@ internal static class CursorWebApiFetcher
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
-            throw new InvalidOperationException("Not logged in to Cursor. Sign in to Cursor and update the cookie header.");
+            throw ProviderFetchException.FromResponse(
+                "Not logged in to Cursor. Sign in to Cursor and update the cookie header.",
+                response,
+                json);
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Cursor usage failed ({(int)response.StatusCode}).");
+            throw ProviderFetchException.FromResponse(
+                $"Cursor usage failed ({(int)response.StatusCode}).",
+                response,
+                json);
         }
 
-        return JsonSerializer.Deserialize<CursorUsageSummary>(json) ?? new CursorUsageSummary();
+        return ProviderJson.Deserialize<CursorUsageSummary>(json, response, "Cursor usage returned malformed JSON.");
     }
 
     private static async Task<string?> TryFetchUserIdAsync(
         HttpClient httpClient,
         string cookieHeader,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken)
     {
         try
         {
             using var request = CreateRequest($"{BaseUrl}/api/auth/me", cookieHeader);
             using var response = await httpClient.SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode)
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (NotedFailedResponse(diagnostics, "/api/auth/me", response, json))
             {
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             using var doc = JsonDocument.Parse(json);
             // Normalize the sub the same way the app-token path does so both
             // paths query /api/usage with the same user-id shape.
@@ -266,6 +279,7 @@ internal static class CursorWebApiFetcher
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            diagnostics.Note($"Cursor /api/auth/me lookup failed: {ex.GetType().Name}: {ex.Message}");
             return null;
         }
     }
@@ -274,27 +288,30 @@ internal static class CursorWebApiFetcher
         HttpClient httpClient,
         string cookieHeader,
         string userId,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken)
     {
         try
         {
             using var request = CreateRequest($"{BaseUrl}/api/usage?user={Uri.EscapeDataString(userId)}", cookieHeader);
             using var response = await httpClient.SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode)
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (NotedFailedResponse(diagnostics, "/api/usage", response, json))
             {
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             using var doc = JsonDocument.Parse(json);
             if (!doc.RootElement.TryGetProperty("gpt-4", out var gpt4) || gpt4.ValueKind != JsonValueKind.Object)
             {
+                diagnostics.Note("Cursor /api/usage has no 'gpt-4' object; treating the plan as token-based.");
                 return null;
             }
 
             var limit = GetInt(gpt4, "maxRequestUsage");
             if (limit is not > 0)
             {
+                diagnostics.Note("Cursor /api/usage reported no request limit; treating the plan as token-based.");
                 return null;
             }
 
@@ -303,8 +320,27 @@ internal static class CursorWebApiFetcher
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            diagnostics.Note($"Cursor /api/usage lookup failed: {ex.GetType().Name}: {ex.Message}");
             return null;
         }
+    }
+
+    // The best-effort lookups all report a failed response the same way; returns true
+    // when the caller should give up on this endpoint.
+    private static bool NotedFailedResponse(
+        SourceDiagnostics diagnostics,
+        string endpoint,
+        HttpResponseMessage response,
+        string json)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return false;
+        }
+
+        diagnostics.Note($"Cursor {endpoint} returned {(int)response.StatusCode} {response.ReasonPhrase}.");
+        diagnostics.Note($"cursor {endpoint} body", DiagnosticsDetail.Body(json));
+        return true;
     }
 
     private static HttpRequestMessage CreateRequest(string url, string cookieHeader)

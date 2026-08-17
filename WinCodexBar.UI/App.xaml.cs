@@ -40,10 +40,9 @@ public partial class App
         var dispatcher = DispatcherQueue.GetForCurrentThread();
         var settingsStore = FileAppSettingsStore.CreateDefault();
 
-        _diagnosticsLogger = new DiagnosticsLogger();
+        _diagnosticsLogger = new DiagnosticsLogger(DiagnosticsLogFile.CreateDefault());
         var usageRefreshPipeline = UsageRefreshPipeline.CreateDefault(logger: _diagnosticsLogger);
         _monitor = new UsageMonitor(settingsStore, usageRefreshPipeline, dispatcher, _diagnosticsLogger);
-        var initializationTask = _monitor.InitializeAsync();
 
         _window = new MainWindow(_monitor);
         _window.Activate();
@@ -55,6 +54,9 @@ public partial class App
                 dispatcher.TryEnqueue(() => mainWindow.ViewModel.AddDiagnosticsEntry(entry));
             };
         }
+
+        // Started after the window subscribes so the first refresh shows up in the panel.
+        var initializationTask = _monitor.InitializeAsync();
 
         var hwnd = WindowNative.GetWindowHandle(_window);
         _trayService = new TrayService(hwnd);

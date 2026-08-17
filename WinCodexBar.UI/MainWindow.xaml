@@ -179,11 +179,31 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Diagnostics log" Style="{StaticResource AppSubtleTextStyle}" VerticalAlignment="Center"/>
+                            <Button x:Name="CopyDiagnosticsButton"
+                                    Grid.Column="1"
+                                    AutomationProperties.AutomationId="CopyDiagnosticsButton"
+                                    AutomationProperties.Name="Copy diagnostics log"
+                                    Click="CopyDiagnostics_Click"
+                                    Style="{StaticResource AppGhostButtonStyle}"
+                                    ToolTipService.ToolTip="Copy the entries shown below">
+                                <SymbolIcon Symbol="Copy"/>
+                            </Button>
+                            <Button x:Name="OpenLogFolderButton"
+                                    Grid.Column="2"
+                                    AutomationProperties.AutomationId="OpenLogFolderButton"
+                                    AutomationProperties.Name="Open log folder"
+                                    Click="OpenLogFolder_Click"
+                                    Style="{StaticResource AppGhostButtonStyle}"
+                                    ToolTipService.ToolTip="Open the folder holding diagnostics.log">
+                                <SymbolIcon Symbol="OpenLocal"/>
+                            </Button>
                             <ComboBox x:Name="DiagnosticsFilterComboBox"
                                       AutomationProperties.AutomationId="DiagnosticsFilterComboBox"
-                                      Grid.Column="1"
+                                      Grid.Column="3"
                                       SelectedIndex="0"
                                       SelectionChanged="DiagnosticsFilterComboBox_SelectionChanged"/>
                         </Grid>
@@ -194,6 +214,7 @@
                                 Background="{ThemeResource ControlFillColorSecondaryBrush}">
                             <Grid ColumnSpacing="6">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20"/>
                                     <ColumnDefinition Width="80"/>
                                     <ColumnDefinition Width="56"/>
                                     <ColumnDefinition Width="64"/>
@@ -201,12 +222,12 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="56"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Timestamp" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                <TextBlock Grid.Column="1" Text="Provider" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                <TextBlock Grid.Column="2" Text="Type" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                <TextBlock Grid.Column="3" Text="Source" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                <TextBlock Grid.Column="4" Text="Message" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                <TextBlock Grid.Column="5" Text="Duration" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
+                                <TextBlock Grid.Column="1" Text="Timestamp" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
+                                <TextBlock Grid.Column="2" Text="Provider" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
+                                <TextBlock Grid.Column="3" Text="Type" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
+                                <TextBlock Grid.Column="4" Text="Source" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
+                                <TextBlock Grid.Column="5" Text="Message" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
+                                <TextBlock Grid.Column="6" Text="Duration" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
                             </Grid>
                         </Border>
 
@@ -214,8 +235,9 @@
                             <ItemsControl ItemsSource="{Binding FilteredDiagnosticsEntries}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid ColumnSpacing="6" Padding="0,3">
+                                        <Grid ColumnSpacing="6" RowSpacing="2" Padding="0,3">
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20"/>
                                                 <ColumnDefinition Width="80"/>
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="64"/>
@@ -223,12 +245,37 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="56"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding TimestampText}" FontFamily="Consolas" FontSize="12"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding ProviderName}"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding EventTypeName}"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding SourceMethod}"/>
-                                            <TextBlock Grid.Column="4" Text="{Binding Message}" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Grid.Column="5" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12"/>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <ToggleButton AutomationProperties.Name="Show entry detail"
+                                                          Visibility="{Binding DetailToggleVisibility}"
+                                                          IsChecked="{Binding IsDetailExpanded, Mode=TwoWay}"
+                                                          Style="{StaticResource AppDetailToggleStyle}"
+                                                          ToolTipService.ToolTip="Show detail">
+                                                <FontIcon Glyph="&#xE76C;" FontSize="10"/>
+                                            </ToggleButton>
+                                            <TextBlock Grid.Column="1" Text="{Binding TimestampText}" FontFamily="Consolas" FontSize="12"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding ProviderName}"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding EventTypeName}"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding SourceMethod}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding Message}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12"/>
+                                            <Border Grid.Row="1"
+                                                    Grid.Column="1"
+                                                    Grid.ColumnSpan="6"
+                                                    Margin="0,2,0,6"
+                                                    Padding="8,6"
+                                                    CornerRadius="6"
+                                                    Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                                    Visibility="{Binding DetailVisibility}">
+                                                <TextBlock Text="{Binding Detail}"
+                                                           FontFamily="Consolas"
+                                                           FontSize="11"
+                                                           IsTextSelectionEnabled="True"
+                                                           TextWrapping="Wrap"/>
+                                            </Border>
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

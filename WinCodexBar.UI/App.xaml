@@ -77,6 +77,16 @@
                 <Setter Property="Background" Value="{StaticResource AppGhostButtonBackgroundBrush}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource AppGhostButtonBorderBrush}"/>
             </Style>
+            <Style x:Key="AppDetailToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="MinWidth" Value="20"/>
+                <Setter Property="Width" Value="20"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="VerticalAlignment" Value="Top"/>
+            </Style>
             <Style x:Key="AppProgressStyle" TargetType="ProgressBar">
                 <Setter Property="Foreground" Value="{StaticResource AppAccentBrush}"/>
                 <Setter Property="Background" Value="{ThemeResource ControlStrongFillColorDefaultBrush}"/>

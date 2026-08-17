@@ -157,7 +157,8 @@ public class CursorAppTokenUsageSourceTests
         return new ProviderUsageSourceRequest(
             ProviderKind.Cursor,
             settings.GetProviderSettings(ProviderKind.Cursor),
-            settings);
+            settings,
+            new SourceDiagnostics());
     }
 
     private sealed class FakeTokenReader : ICursorLocalTokenReader

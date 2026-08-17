@@ -138,13 +138,22 @@ public sealed class UsageRefreshPipeline : IUsageRefreshPipeline
 
             attemptedAny = true;
             var sourceName = sourceMode.ToString();
-            _logger?.LogAttempt(provider, sourceName, $"Attempting {sourceName} fetch...");
+            var diagnostics = new SourceDiagnostics();
+
+            _logger?.LogAttempt(
+                provider,
+                sourceName,
+                $"Attempting {sourceName} fetch...",
+                DiagnosticsDetail.Compose(
+                    ("requested-mode", providerSettings.SourceMode.ToString()),
+                    ("cookie-source", providerSettings.CookieSource.ToString())));
+
             var stopwatch = _clock.StartStopwatch();
 
             try
             {
                 var snapshot = await source.FetchAsync(
-                    new ProviderUsageSourceRequest(provider, providerSettings, settings),
+                    new ProviderUsageSourceRequest(provider, providerSettings, settings, diagnostics),
                     cancellationToken);
 
                 stopwatch.Stop();
@@ -155,12 +164,22 @@ public sealed class UsageRefreshPipeline : IUsageRefreshPipeline
                     return snapshot;
                 }
 
-                _logger?.LogFailure(provider, sourceName, $"No data from {sourceName}", stopwatch.Elapsed);
+                _logger?.LogFailure(
+                    provider,
+                    sourceName,
+                    $"No data from {sourceName}",
+                    stopwatch.Elapsed,
+                    diagnostics.ToDetail());
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _logger?.LogFailure(provider, sourceName, ex.Message, stopwatch.Elapsed);
+                _logger?.LogFailure(
+                    provider,
+                    sourceName,
+                    ex.Message,
+                    stopwatch.Elapsed,
+                    DiagnosticsDetail.Join(diagnostics.ToDetail(), DiagnosticsDetail.FromException(ex)));
                 errors.Add(ex.Message);
             }
         }
@@ -223,7 +242,36 @@ internal interface IProviderUsageSource
 internal sealed record ProviderUsageSourceRequest(
     ProviderKind Provider,
     ProviderSettings ProviderSettings,
-    AppSettings AppSettings);
+    AppSettings AppSettings,
+    SourceDiagnostics Diagnostics);
+
+// Collects why a source could not produce data; a source that returns null to fall
+// through to the next one says nothing on its own.
+internal sealed class SourceDiagnostics
+{
+    private readonly List<string> _notes = new();
+
+    public void Note(string message)
+    {
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            _notes.Add(message.Trim());
+        }
+    }
+
+    public void Note(string key, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            Note($"{key}: {value}");
+        }
+    }
+
+    public string? ToDetail()
+    {
+        return _notes.Count == 0 ? null : string.Join(Environment.NewLine, _notes);
+    }
+}
 
 internal interface IUsageClock
 {

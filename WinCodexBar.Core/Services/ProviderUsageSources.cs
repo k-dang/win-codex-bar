@@ -36,14 +36,19 @@ internal sealed class CodexOAuthUsageSource : IProviderUsageSource
         ProviderUsageSourceRequest request,
         CancellationToken cancellationToken)
     {
-        var credentials = CodexOAuthCredentialsStore.Load();
+        var credentials = CodexOAuthCredentialsStore.Load(out var loadFailure);
         if (credentials == null)
         {
+            request.Diagnostics.Note(loadFailure ?? "No Codex OAuth credentials available.");
             return null;
         }
 
+        request.Diagnostics.Note("credentials", CodexOAuthCredentialsStore.AuthPath);
+        request.Diagnostics.Note("last-refresh", credentials.LastRefresh?.ToString("O") ?? "never");
+
         if (credentials.NeedsRefresh && !string.IsNullOrWhiteSpace(credentials.RefreshToken))
         {
+            request.Diagnostics.Note("Access token is stale; refreshing before fetching usage.");
             credentials = await CodexTokenRefresher.RefreshAsync(_httpClient, credentials, cancellationToken);
             CodexOAuthCredentialsStore.Save(credentials);
         }
@@ -84,17 +89,33 @@ internal abstract class ManualCookieUsageSource : IProviderUsageSource
         CancellationToken cancellationToken)
     {
         var settings = request.ProviderSettings;
-        if (settings.CookieSource != CookieSourceMode.Manual || string.IsNullOrWhiteSpace(settings.CookieHeader))
+        if (settings.CookieSource != CookieSourceMode.Manual)
         {
+            request.Diagnostics.Note($"Web source needs a manual cookie, but cookie source is {settings.CookieSource}.");
             return Task.FromResult<ProviderUsageSnapshot?>(null);
         }
 
-        return FetchWithCookieAsync(settings.CookieHeader, cancellationToken);
+        if (string.IsNullOrWhiteSpace(settings.CookieHeader))
+        {
+            request.Diagnostics.Note("Web source is set to manual cookie, but the cookie header is empty.");
+            return Task.FromResult<ProviderUsageSnapshot?>(null);
+        }
+
+        request.Diagnostics.Note("cookie-names", DescribeCookieNames(settings.CookieHeader));
+        return FetchWithCookieAsync(settings.CookieHeader, request.Diagnostics, cancellationToken);
     }
 
     protected abstract Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
         string cookieHeader,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken);
+
+    // Names only; the values are the secret.
+    private static string DescribeCookieNames(string cookieHeader)
+    {
+        var names = CookieHeaderParser.Parse(cookieHeader).Select(pair => pair.Name).ToArray();
+        return names.Length == 0 ? "none parsed" : string.Join(", ", names);
+    }
 }
 
 internal sealed class CodexWebUsageSource : ManualCookieUsageSource
@@ -108,6 +129,7 @@ internal sealed class CodexWebUsageSource : ManualCookieUsageSource
 
     protected override async Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
         string cookieHeader,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken)
     {
         var usage = await CodexOAuthUsageFetcher.FetchUsageWithCookiesAsync(
@@ -135,7 +157,7 @@ internal sealed class CodexCliUsageSource : IProviderUsageSource
         ProviderUsageSourceRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await CodexCliClient.FetchAsync(cancellationToken);
+        var result = await CodexCliClient.FetchAsync(request.Diagnostics, cancellationToken);
         if (result == null)
         {
             return null;
@@ -168,9 +190,20 @@ internal sealed class ClaudeOAuthUsageSource : IProviderUsageSource
         ProviderUsageSourceRequest request,
         CancellationToken cancellationToken)
     {
-        var credentials = ClaudeOAuthCredentialsStore.Load();
-        if (credentials == null || credentials.IsExpired)
+        var credentials = ClaudeOAuthCredentialsStore.Load(out var loadFailure);
+        if (credentials == null)
         {
+            request.Diagnostics.Note(loadFailure ?? "No Claude OAuth credentials available.");
+            return null;
+        }
+
+        request.Diagnostics.Note("credentials", ClaudeOAuthCredentialsStore.CredentialsPath);
+        request.Diagnostics.Note("scopes", credentials.Scopes.Count == 0 ? "none" : string.Join(" ", credentials.Scopes));
+
+        if (credentials.IsExpired)
+        {
+            request.Diagnostics.Note(
+                $"Claude OAuth token expired at {credentials.ExpiresAt:O}. Run `claude` to sign in again.");
             return null;
         }
 
@@ -201,6 +234,7 @@ internal sealed class ClaudeWebUsageSource : ManualCookieUsageSource
 
     protected override async Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
         string cookieHeader,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken)
     {
         var usage = await ClaudeWebApiFetcher.FetchUsageAsync(
@@ -244,7 +278,7 @@ internal sealed class ClaudeCliUsageSource : IProviderUsageSource
         ProviderUsageSourceRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await ClaudeCliClient.FetchAsync(cancellationToken);
+        var result = await ClaudeCliClient.FetchAsync(request.Diagnostics, cancellationToken);
         if (result == null)
         {
             return null;
@@ -282,9 +316,19 @@ internal sealed class CursorAppTokenUsageSource : IProviderUsageSource
         // The SQLite read is synchronous file I/O and the pipeline is awaited on the
         // UI thread, so push it off the caller's thread.
         var token = await Task.Run(_tokenReader.ReadAccessToken, cancellationToken);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            request.Diagnostics.Note(
+                $"No Cursor access token in the app state database ({CursorStateDbTokenReader.StateDbPath}). " +
+                "Sign in to the Cursor app, or switch this provider to a manual cookie.");
+            return null;
+        }
+
         var session = CursorAppSession.TryCreate(token, DateTimeOffset.UtcNow);
         if (session == null)
         {
+            request.Diagnostics.Note(
+                "Cursor app token is malformed or expired (no usable 'sub'/'exp' claim). Sign in to the Cursor app again.");
             return null;
         }
 
@@ -292,6 +336,7 @@ internal sealed class CursorAppTokenUsageSource : IProviderUsageSource
             _httpClient,
             session.CookieHeader,
             session.UserId,
+            request.Diagnostics,
             cancellationToken);
 
         return CursorUsageMapper.ToSnapshot(usage, "app");
@@ -309,12 +354,14 @@ internal sealed class CursorWebUsageSource : ManualCookieUsageSource
 
     protected override async Task<ProviderUsageSnapshot?> FetchWithCookieAsync(
         string cookieHeader,
+        SourceDiagnostics diagnostics,
         CancellationToken cancellationToken)
     {
         var usage = await CursorWebApiFetcher.FetchUsageAsync(
             HttpClient,
             cookieHeader,
             knownUserId: null,
+            diagnostics,
             cancellationToken);
 
         return CursorUsageMapper.ToSnapshot(usage, "web");

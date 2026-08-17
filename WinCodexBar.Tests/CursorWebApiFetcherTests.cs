@@ -31,6 +31,7 @@ public class CursorWebApiFetcherTests
             new HttpClient(handler),
             "cookie",
             knownUserId: "user_known",
+            new SourceDiagnostics(),
             CancellationToken.None);
 
         Assert.DoesNotContain(handler.Requests, uri => uri.AbsolutePath == "/api/auth/me");
@@ -53,6 +54,7 @@ public class CursorWebApiFetcherTests
             new HttpClient(handler),
             "cookie",
             knownUserId: null,
+            new SourceDiagnostics(),
             CancellationToken.None);
 
         var quotaRequest = Assert.Single(handler.Requests, uri => uri.AbsolutePath == "/api/usage");
@@ -73,6 +75,7 @@ public class CursorWebApiFetcherTests
             new HttpClient(handler),
             "cookie",
             knownUserId: null,
+            new SourceDiagnostics(),
             CancellationToken.None);
 
         Assert.DoesNotContain(handler.Requests, uri => uri.AbsolutePath == "/api/usage");

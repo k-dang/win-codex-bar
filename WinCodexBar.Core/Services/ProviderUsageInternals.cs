@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -38,11 +39,14 @@ internal static class CodexOAuthCredentialsStore
         PropertyNameCaseInsensitive = true
     };
 
-    public static CodexOAuthCredentials? Load()
+    public static string AuthPath => ResolveAuthPath();
+
+    public static CodexOAuthCredentials? Load(out string? failureReason)
     {
         var path = ResolveAuthPath();
         if (!File.Exists(path))
         {
+            failureReason = $"Codex auth file not found at {path}. Run `codex` to log in.";
             return null;
         }
 
@@ -51,6 +55,7 @@ internal static class CodexOAuthCredentialsStore
             var json = File.ReadAllText(path);
             if (string.IsNullOrWhiteSpace(json))
             {
+                failureReason = $"Codex auth file is empty ({path}).";
                 return null;
             }
 
@@ -62,18 +67,21 @@ internal static class CodexOAuthCredentialsStore
                 var apiKey = apiKeyElement.GetString();
                 if (!string.IsNullOrWhiteSpace(apiKey))
                 {
+                    failureReason = null;
                     return new CodexOAuthCredentials { AccessToken = apiKey.Trim() };
                 }
             }
 
             if (!root.TryGetProperty("tokens", out var tokens))
             {
+                failureReason = $"Codex auth file has no 'tokens' object ({path}).";
                 return null;
             }
 
             var access = GetString(tokens, "access_token");
             if (string.IsNullOrWhiteSpace(access))
             {
+                failureReason = $"Codex auth file has no 'tokens.access_token' ({path}).";
                 return null;
             }
 
@@ -82,6 +90,7 @@ internal static class CodexOAuthCredentialsStore
             var accountId = GetString(tokens, "account_id");
             var lastRefresh = IsoDate.Parse(GetString(root, "last_refresh"));
 
+            failureReason = null;
             return new CodexOAuthCredentials
             {
                 AccessToken = access,
@@ -91,8 +100,9 @@ internal static class CodexOAuthCredentialsStore
                 LastRefresh = lastRefresh
             };
         }
-        catch
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
+            failureReason = $"Could not read Codex auth file {path}: {ex.GetType().Name}: {ex.Message}";
             return null;
         }
     }
@@ -163,12 +173,22 @@ internal static class CodexTokenRefresher
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            throw new InvalidOperationException("Codex refresh token expired. Run `codex` to log in again.");
+            throw ProviderFetchException.FromResponse(
+                "Codex refresh token expired. Run `codex` to log in again.",
+                response,
+                body,
+                ("last-refresh", credentials.LastRefresh?.ToString("O") ?? "never"));
         }
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            throw ProviderFetchException.FromResponse(
+                $"Codex token refresh failed ({(int)response.StatusCode}).",
+                response,
+                body);
+        }
 
-        using var doc = JsonDocument.Parse(body);
+        using var doc = ProviderJson.Parse(body, response, "Codex token refresh returned malformed JSON.");
         var root = doc.RootElement;
         var accessToken = GetString(root, "access_token") ?? credentials.AccessToken;
         var refreshToken = GetString(root, "refresh_token") ?? credentials.RefreshToken;
@@ -189,6 +209,34 @@ internal static class CodexTokenRefresher
         return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
+    }
+}
+
+internal static class ProviderJson
+{
+    public static JsonDocument Parse(string body, HttpResponseMessage response, string message)
+    {
+        try
+        {
+            return JsonDocument.Parse(body);
+        }
+        catch (JsonException ex)
+        {
+            throw ProviderFetchException.FromResponse(message, response, body, ex);
+        }
+    }
+
+    public static T Deserialize<T>(string body, HttpResponseMessage response, string message)
+        where T : new()
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<T>(body) ?? new T();
+        }
+        catch (JsonException ex)
+        {
+            throw ProviderFetchException.FromResponse(message, response, body, ex);
+        }
     }
 }
 
@@ -246,10 +294,14 @@ internal static class CodexOAuthUsageFetcher
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Codex OAuth API failed ({(int)response.StatusCode}).");
+            throw ProviderFetchException.FromResponse(
+                $"Codex OAuth API failed ({(int)response.StatusCode}).",
+                response,
+                json,
+                ("account-id", string.IsNullOrWhiteSpace(accountId) ? "not sent" : accountId));
         }
 
-        return JsonSerializer.Deserialize<CodexUsageResponse>(json) ?? new CodexUsageResponse();
+        return ProviderJson.Deserialize<CodexUsageResponse>(json, response, "Codex OAuth API returned malformed JSON.");
     }
 
     public static async Task<CodexUsageResponse> FetchUsageWithCookiesAsync(
@@ -267,10 +319,13 @@ internal static class CodexOAuthUsageFetcher
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Codex web usage failed ({(int)response.StatusCode}).");
+            throw ProviderFetchException.FromResponse(
+                $"Codex web usage failed ({(int)response.StatusCode}).",
+                response,
+                json);
         }
 
-        return JsonSerializer.Deserialize<CodexUsageResponse>(json) ?? new CodexUsageResponse();
+        return ProviderJson.Deserialize<CodexUsageResponse>(json, response, "Codex web usage returned malformed JSON.");
     }
 
     private static string ResolveUsageUrl()
@@ -362,22 +417,27 @@ internal sealed class CodexCliResult
 
 internal static class CodexCliClient
 {
-    public static async Task<CodexCliResult?> FetchAsync(CancellationToken cancellationToken)
+    public static async Task<CodexCliResult?> FetchAsync(
+        SourceDiagnostics diagnostics,
+        CancellationToken cancellationToken)
     {
-        var rpcResult = await TryFetchViaRpcAsync(cancellationToken);
+        var rpcResult = await TryFetchViaRpcAsync(diagnostics, cancellationToken);
         if (rpcResult != null)
         {
             return rpcResult;
         }
 
-        return await TryFetchViaPtyAsync(cancellationToken);
+        return await TryFetchViaPtyAsync(diagnostics, cancellationToken);
     }
 
-    private static async Task<CodexCliResult?> TryFetchViaRpcAsync(CancellationToken cancellationToken)
+    private static async Task<CodexCliResult?> TryFetchViaRpcAsync(
+        SourceDiagnostics diagnostics,
+        CancellationToken cancellationToken)
     {
+        using var client = new JsonRpcProcessClient("codex", "-s read-only -a untrusted app-server");
+
         try
         {
-            using var client = new JsonRpcProcessClient("codex", "-s read-only -a untrusted app-server");
             await client.StartAsync(cancellationToken);
 
             await client.SendAsync(1, "initialize", new { client = new { name = "WinCodexBar", version = "0.1" } }, cancellationToken)
@@ -395,28 +455,41 @@ internal static class CodexCliClient
                 Secondary = secondary
             };
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            diagnostics.Note($"codex app-server RPC failed: {ex.GetType().Name}: {ex.Message}");
+            diagnostics.Note("codex-rpc-stderr", DiagnosticsDetail.Body(client.StandardError));
             return null;
         }
     }
 
-    private static async Task<CodexCliResult?> TryFetchViaPtyAsync(CancellationToken cancellationToken)
+    private static async Task<CodexCliResult?> TryFetchViaPtyAsync(
+        SourceDiagnostics diagnostics,
+        CancellationToken cancellationToken)
     {
-        var output = await ProcessRunner.RunInteractiveAsync(
+        var run = await ProcessRunner.RunInteractiveAsync(
             "codex",
             "",
             "/status\n",
             TimeSpan.FromSeconds(8),
             cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(output))
+        diagnostics.Note("codex-pty", run.Describe());
+
+        if (string.IsNullOrWhiteSpace(run.Output))
         {
+            diagnostics.Note("codex-pty-stderr", DiagnosticsDetail.Body(run.StandardError));
             return null;
         }
 
-        var sessionPercent = ExtractPercent(output, "5h", "5 h", "5-hour", "5 hour");
-        var weeklyPercent = ExtractPercent(output, "weekly", "week");
+        var sessionPercent = ExtractPercent(run.Output, "5h", "5 h", "5-hour", "5 hour");
+        var weeklyPercent = ExtractPercent(run.Output, "weekly", "week");
+
+        if (sessionPercent == null && weeklyPercent == null)
+        {
+            diagnostics.Note("No usage percentages found in `codex /status` output.");
+            diagnostics.Note("codex-pty-output", DiagnosticsDetail.Body(run.Output));
+        }
 
         return new CodexCliResult
         {
@@ -554,6 +627,7 @@ internal sealed class JsonRpcProcessClient : IDisposable
 {
     private readonly string _fileName;
     private readonly string _arguments;
+    private readonly StringBuilder _standardError = new();
     private Process? _process;
     private StreamWriter? _stdin;
     private StreamReader? _stdout;
@@ -562,6 +636,17 @@ internal sealed class JsonRpcProcessClient : IDisposable
     {
         _fileName = fileName;
         _arguments = arguments;
+    }
+
+    public string StandardError
+    {
+        get
+        {
+            lock (_standardError)
+            {
+                return _standardError.ToString().Trim();
+            }
+        }
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -580,7 +665,35 @@ internal sealed class JsonRpcProcessClient : IDisposable
             }
         };
 
-        _process.Start();
+        // Drained on a callback so stderr is available without blocking the stdout reader.
+        _process.ErrorDataReceived += (_, args) =>
+        {
+            if (args.Data == null)
+            {
+                return;
+            }
+
+            lock (_standardError)
+            {
+                _standardError.AppendLine(args.Data);
+            }
+        };
+
+        try
+        {
+            _process.Start();
+        }
+        catch (Win32Exception ex)
+        {
+            throw new ProviderFetchException(
+                $"Could not start '{_fileName}'. Is it installed and on PATH?",
+                DiagnosticsDetail.Compose(
+                    ("command", $"{_fileName} {_arguments}"),
+                    ("native-error", ex.NativeErrorCode.ToString())),
+                ex);
+        }
+
+        _process.BeginErrorReadLine();
         _stdin = _process.StandardInput;
         _stdout = _process.StandardOutput;
 
@@ -607,10 +720,14 @@ internal sealed class JsonRpcProcessClient : IDisposable
         await _stdin.FlushAsync();
 
         var timeoutAt = DateTimeOffset.Now.AddSeconds(5);
-        while (DateTimeOffset.Now < timeoutAt)
+        while (true)
         {
-            var line = await _stdout.ReadLineAsync();
-            if (line == null)
+            var (timedOut, line) = await DeadlineReader.ReadLineAsync(
+                _stdout,
+                timeoutAt - DateTimeOffset.Now,
+                cancellationToken);
+
+            if (timedOut || line == null)
             {
                 break;
             }
@@ -658,11 +775,14 @@ internal sealed class ClaudeOAuthCredentials
 
 internal static class ClaudeOAuthCredentialsStore
 {
-    public static ClaudeOAuthCredentials? Load()
+    public static string CredentialsPath => ResolveCredentialsPath();
+
+    public static ClaudeOAuthCredentials? Load(out string? failureReason)
     {
         var path = ResolveCredentialsPath();
         if (!File.Exists(path))
         {
+            failureReason = $"Claude credentials file not found at {path}. Run `claude` to log in.";
             return null;
         }
 
@@ -674,12 +794,14 @@ internal static class ClaudeOAuthCredentialsStore
 
             if (!TryGetChild(root, out var oauth, "claudeAiOauth", "claude_ai_oauth"))
             {
+                failureReason = $"Claude credentials file has no 'claudeAiOauth' object ({path}).";
                 return null;
             }
 
             var accessToken = GetString(oauth, "accessToken") ?? string.Empty;
             if (string.IsNullOrWhiteSpace(accessToken))
             {
+                failureReason = $"Claude credentials file has no 'claudeAiOauth.accessToken' ({path}).";
                 return null;
             }
 
@@ -687,6 +809,7 @@ internal static class ClaudeOAuthCredentialsStore
             var scopes = GetStringArray(oauth, "scopes");
             var rateLimitTier = GetString(oauth, "rateLimitTier");
 
+            failureReason = null;
             return new ClaudeOAuthCredentials
             {
                 AccessToken = accessToken,
@@ -695,8 +818,9 @@ internal static class ClaudeOAuthCredentialsStore
                 RateLimitTier = rateLimitTier
             };
         }
-        catch
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
+            failureReason = $"Could not read Claude credentials file {path}: {ex.GetType().Name}: {ex.Message}";
             return null;
         }
     }
@@ -803,10 +927,14 @@ internal static class ClaudeOAuthUsageFetcher
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Claude OAuth API failed ({(int)response.StatusCode}).");
+            throw ProviderFetchException.FromResponse(
+                $"Claude OAuth API failed ({(int)response.StatusCode}).",
+                response,
+                json,
+                ("anthropic-beta", BetaHeader));
         }
 
-        return JsonSerializer.Deserialize<ClaudeOAuthUsageResponse>(json) ?? new ClaudeOAuthUsageResponse();
+        return ProviderJson.Deserialize<ClaudeOAuthUsageResponse>(json, response, "Claude OAuth API returned malformed JSON.");
     }
 }
 
@@ -852,17 +980,24 @@ internal static class ClaudeWebApiFetcher
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Claude org lookup failed ({(int)response.StatusCode}).");
+            throw ProviderFetchException.FromResponse(
+                $"Claude org lookup failed ({(int)response.StatusCode}).",
+                response,
+                json);
         }
 
-        var orgs = JsonSerializer.Deserialize<List<ClaudeOrgResponse>>(json) ?? new List<ClaudeOrgResponse>();
+        var orgs = ProviderJson.Deserialize<List<ClaudeOrgResponse>>(json, response, "Claude org lookup returned malformed JSON.");
         var selected = orgs.Find(org => org.Capabilities?.Contains("chat", StringComparer.OrdinalIgnoreCase) == true)
             ?? orgs.Find(org => org.Capabilities?.Contains("api", StringComparer.OrdinalIgnoreCase) != true)
             ?? (orgs.Count > 0 ? orgs[0] : null);
 
         if (selected == null || string.IsNullOrWhiteSpace(selected.Uuid))
         {
-            throw new InvalidOperationException("No Claude organization found.");
+            throw ProviderFetchException.FromResponse(
+                "No Claude organization found.",
+                response,
+                json,
+                ("organizations-returned", orgs.Count.ToString()));
         }
 
         return selected.Uuid;
@@ -882,10 +1017,13 @@ internal static class ClaudeWebApiFetcher
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Claude usage failed ({(int)response.StatusCode}).");
+            throw ProviderFetchException.FromResponse(
+                $"Claude usage failed ({(int)response.StatusCode}).",
+                response,
+                json);
         }
 
-        using var doc = JsonDocument.Parse(json);
+        using var doc = ProviderJson.Parse(json, response, "Claude usage returned malformed JSON.");
         var root = doc.RootElement;
         var fiveHour = root.TryGetProperty("five_hour", out var session) ? session : default;
         var sevenDay = root.TryGetProperty("seven_day", out var weekly) ? weekly : default;
@@ -967,22 +1105,33 @@ internal sealed class ClaudeCliResult
 
 internal static class ClaudeCliClient
 {
-    public static async Task<ClaudeCliResult?> FetchAsync(CancellationToken cancellationToken)
+    public static async Task<ClaudeCliResult?> FetchAsync(
+        SourceDiagnostics diagnostics,
+        CancellationToken cancellationToken)
     {
-        var output = await ProcessRunner.RunInteractiveAsync(
+        var run = await ProcessRunner.RunInteractiveAsync(
             "claude",
             "--allowed-tools \"\"",
             "/usage\n",
             TimeSpan.FromSeconds(10),
             cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(output))
+        diagnostics.Note("claude-cli", run.Describe());
+
+        if (string.IsNullOrWhiteSpace(run.Output))
         {
+            diagnostics.Note("claude-cli-stderr", DiagnosticsDetail.Body(run.StandardError));
             return null;
         }
 
-        var sessionPercent = ExtractPercent(output, "current session", "session");
-        var weeklyPercent = ExtractPercent(output, "current week", "weekly", "week");
+        var sessionPercent = ExtractPercent(run.Output, "current session", "session");
+        var weeklyPercent = ExtractPercent(run.Output, "current week", "weekly", "week");
+
+        if (sessionPercent == null && weeklyPercent == null)
+        {
+            diagnostics.Note("No usage percentages found in `claude /usage` output.");
+            diagnostics.Note("claude-cli-output", DiagnosticsDetail.Body(run.Output));
+        }
 
         return new ClaudeCliResult
         {
@@ -1014,15 +1163,56 @@ internal static class ClaudeCliClient
     }
 }
 
+internal sealed record ProcessRunResult(
+    string Command,
+    string? Output,
+    string? StandardError,
+    int? ExitCode,
+    bool TimedOut,
+    TimeSpan Elapsed)
+{
+    public string Describe()
+    {
+        var exit = ExitCode.HasValue ? ExitCode.Value.ToString() : "n/a";
+        var state = TimedOut ? "timed out" : "exited";
+        return $"`{Command}` {state} after {Elapsed.TotalMilliseconds:0}ms (exit {exit}, {Output?.Length ?? 0} bytes stdout)";
+    }
+}
+
+// A child process that neither writes nor exits — one sitting on a login prompt, say —
+// would block ReadLineAsync forever, so every read races the caller's remaining time.
+internal static class DeadlineReader
+{
+    public static async Task<(bool TimedOut, string? Line)> ReadLineAsync(
+        StreamReader reader,
+        TimeSpan remaining,
+        CancellationToken cancellationToken)
+    {
+        if (remaining <= TimeSpan.Zero)
+        {
+            return (true, null);
+        }
+
+        var readTask = reader.ReadLineAsync(cancellationToken).AsTask();
+        if (await Task.WhenAny(readTask, Task.Delay(remaining, cancellationToken)) != readTask)
+        {
+            return (true, null);
+        }
+
+        return (false, await readTask);
+    }
+}
+
 internal static class ProcessRunner
 {
-    public static async Task<string?> RunInteractiveAsync(
+    public static async Task<ProcessRunResult> RunInteractiveAsync(
         string fileName,
         string arguments,
         string input,
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
+        var command = string.IsNullOrWhiteSpace(arguments) ? fileName : $"{fileName} {arguments}";
         using var process = new Process();
         process.StartInfo = new ProcessStartInfo
         {
@@ -1035,9 +1225,22 @@ internal static class ProcessRunner
             CreateNoWindow = true
         };
 
-        if (!process.Start())
+        try
         {
-            return null;
+            if (!process.Start())
+            {
+                return new ProcessRunResult(command, null, null, null, false, TimeSpan.Zero);
+            }
+        }
+        catch (Win32Exception ex)
+        {
+            throw new ProviderFetchException(
+                $"Could not start '{fileName}'. Is it installed and on PATH?",
+                DiagnosticsDetail.Compose(
+                    ("command", command),
+                    ("native-error", ex.NativeErrorCode.ToString()),
+                    ("path", Environment.GetEnvironmentVariable("PATH"))),
+                ex);
         }
 
         await process.StandardInput.WriteAsync(input.AsMemory(), cancellationToken);
@@ -1045,10 +1248,21 @@ internal static class ProcessRunner
 
         var output = new StringBuilder();
         var started = DateTimeOffset.Now;
+        var timedOut = false;
 
-        while (!process.HasExited && DateTimeOffset.Now - started < timeout)
+        while (!process.HasExited)
         {
-            var line = await process.StandardOutput.ReadLineAsync();
+            var (readTimedOut, line) = await DeadlineReader.ReadLineAsync(
+                process.StandardOutput,
+                timeout - (DateTimeOffset.Now - started),
+                cancellationToken);
+
+            if (readTimedOut)
+            {
+                timedOut = true;
+                break;
+            }
+
             if (line != null)
             {
                 output.AppendLine(line);
@@ -1065,19 +1279,21 @@ internal static class ProcessRunner
                 process.Kill(true);
             }
         }
-        catch
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
-            // ignored
+            // The process raced us to exit; nothing to clean up.
         }
 
-        var stderr = await process.StandardError.ReadToEndAsync();
-        if (!string.IsNullOrWhiteSpace(stderr))
-        {
-            output.AppendLine(stderr);
-        }
-
+        var stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
         var text = output.ToString().Trim();
-        return string.IsNullOrWhiteSpace(text) ? null : text;
+
+        return new ProcessRunResult(
+            command,
+            string.IsNullOrWhiteSpace(text) ? null : text,
+            string.IsNullOrWhiteSpace(stderr) ? null : stderr.Trim(),
+            process.HasExited ? process.ExitCode : null,
+            timedOut,
+            DateTimeOffset.Now - started);
     }
 }
 
