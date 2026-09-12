@@ -8,28 +8,15 @@ using WinCodexBar.Core.Models;
 
 namespace WinCodexBar.UI.ViewModels;
 
-public sealed class SettingsViewModel : INotifyPropertyChanged
+public sealed class SettingsViewModel
 {
-    private double _refreshMinutes;
-
-    public double RefreshMinutes
-    {
-        get => _refreshMinutes;
-        set => SetProperty(ref _refreshMinutes, value);
-    }
-
     public ObservableCollection<ProviderSettingsEditorState> ProviderEditors { get; } = new();
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public static SettingsViewModel FromSettings(AppSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        var viewModel = new SettingsViewModel
-        {
-            RefreshMinutes = settings.RefreshMinutes > 0 ? settings.RefreshMinutes : AppSettings.CreateDefault().RefreshMinutes
-        };
+        var viewModel = new SettingsViewModel();
 
         foreach (var definition in ProviderCatalog.SupportedProviders)
         {
@@ -42,15 +29,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public AppSettings ToSettings()
     {
-        var refreshValue = RefreshMinutes;
-        if (double.IsNaN(refreshValue) || refreshValue <= 0)
-        {
-            refreshValue = AppSettings.CreateDefault().RefreshMinutes;
-        }
-
         return new AppSettings
         {
-            RefreshMinutes = (int)Math.Max(1, refreshValue),
             Providers = ProviderEditors.ToDictionary(
                 editor => editor.Provider,
                 editor => new ProviderSettings
@@ -61,23 +41,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                     CookieHeader = string.IsNullOrWhiteSpace(editor.CookieHeader) ? null : editor.CookieHeader.Trim()
                 })
         };
-    }
-
-    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (Equals(field, value))
-        {
-            return false;
-        }
-
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
-    }
-
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
 

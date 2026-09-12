@@ -9,21 +9,18 @@ public sealed class SettingsViewModelTests
     public void FromSettings_CreatesEditorsForSupportedProviders()
     {
         var settings = AppSettings.CreateDefault();
-        settings.RefreshMinutes = 12;
         settings.GetProviderSettings(ProviderKind.Codex).Enabled = false;
 
         var viewModel = SettingsViewModel.FromSettings(settings);
 
-        Assert.Equal(12, viewModel.RefreshMinutes);
         Assert.Equal(ProviderCatalog.SupportedProviders.Count, viewModel.ProviderEditors.Count);
         Assert.False(viewModel.ProviderEditors.Single(editor => editor.Provider == ProviderKind.Codex).IsEnabled);
     }
 
     [Fact]
-    public void ToSettings_ClampsInvalidRefreshMinutesAndTrimsCookieHeaders()
+    public void ToSettings_MapsProviderSelectionsAndTrimsCookieHeaders()
     {
         var viewModel = SettingsViewModel.FromSettings(AppSettings.CreateDefault());
-        viewModel.RefreshMinutes = double.NaN;
         var codexEditor = viewModel.ProviderEditors.Single(editor => editor.Provider == ProviderKind.Codex);
         codexEditor.SelectedSourceIndex = Array.IndexOf(codexEditor.SourceModes, ProviderSourceMode.Cli);
         codexEditor.SelectedCookieSourceIndex = Array.IndexOf(codexEditor.CookieSourceModes, CookieSourceMode.Manual);
@@ -32,7 +29,6 @@ public sealed class SettingsViewModelTests
         var settings = viewModel.ToSettings();
 
         var codexSettings = settings.GetProviderSettings(ProviderKind.Codex);
-        Assert.Equal(5, settings.RefreshMinutes);
         Assert.Equal(ProviderSourceMode.Cli, codexSettings.SourceMode);
         Assert.Equal(CookieSourceMode.Manual, codexSettings.CookieSource);
         Assert.Equal("cookie=value", codexSettings.CookieHeader);

@@ -69,11 +69,6 @@ public sealed class FileAppSettingsStore : IAppSettingsStore
                 return defaults;
             }
 
-            if (settings.RefreshMinutes <= 0)
-            {
-                settings.RefreshMinutes = defaults.RefreshMinutes;
-            }
-
             settings.NormalizeProviders();
 
             return settings;

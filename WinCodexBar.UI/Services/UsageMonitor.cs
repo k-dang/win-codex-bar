@@ -30,6 +30,7 @@ public sealed class UsageMonitor
         _diagnosticsLogger = diagnosticsLogger;
 
         _timer = dispatcherQueue.CreateTimer();
+        _timer.Interval = TimeSpan.FromMinutes(5);
         _timer.Tick += async (_, _) => await RefreshAsync();
     }
 
@@ -45,7 +46,8 @@ public sealed class UsageMonitor
     {
         await ExecuteRefreshAsync(async () =>
         {
-            ApplySettings(await _settingsStore.LoadAsync());
+            _settings = await _settingsStore.LoadAsync();
+            _timer.Start();
             return await _usageRefreshPipeline.RefreshAsync(_settings);
         });
     }
@@ -62,21 +64,7 @@ public sealed class UsageMonitor
 
     public async Task SaveSettingsAsync(AppSettings settings)
     {
-        ApplySettings(await _settingsStore.SaveAsync(settings));
-    }
-
-    private void ApplySettings(AppSettings settings)
-    {
-        _settings = settings;
-        ConfigureTimer();
-    }
-
-    private void ConfigureTimer()
-    {
-        _timer.Stop();
-        var minutes = Math.Max(1, _settings.RefreshMinutes);
-        _timer.Interval = TimeSpan.FromMinutes(minutes);
-        _timer.Start();
+        _settings = await _settingsStore.SaveAsync(settings);
     }
 
     private async Task ExecuteRefreshAsync(Func<Task<UsageSummary>> refresh)

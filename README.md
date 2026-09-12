@@ -16,7 +16,7 @@ Win Codex Bar is a WinUI 3 desktop tray app for monitoring Codex and Claude Code
 - Tray + window UI for Codex and Claude usage snapshots.
 - Configurable source mode per provider: `Auto`, `OAuth`, `Web (Cookies)`, or `CLI`.
 - Diagnostics timeline with provider filtering.
-- Configurable refresh interval and per-provider enable/disable settings.
+- Automatic refresh every 5 minutes and per-provider enable/disable settings.
 
 ## Project Layout
 

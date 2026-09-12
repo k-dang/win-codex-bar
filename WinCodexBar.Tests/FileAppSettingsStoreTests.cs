@@ -13,7 +13,6 @@ public sealed class FileAppSettingsStoreTests
 
         var settings = await store.LoadAsync();
 
-        Assert.Equal(5, settings.RefreshMinutes);
         foreach (var provider in ProviderCatalog.SupportedProviderKinds)
         {
             Assert.NotNull(settings.GetProviderSettings(provider));
@@ -32,18 +31,16 @@ public sealed class FileAppSettingsStoreTests
 
         var settings = await store.LoadAsync();
 
-        Assert.Equal(5, settings.RefreshMinutes);
         Assert.True(settings.GetProviderSettings(ProviderKind.Codex).Enabled);
     }
 
     [Fact]
-    public async Task LoadAsync_InvalidRefreshMinutes_UsesDefaultRefreshMinutesAndNormalizesProviders()
+    public async Task LoadAsync_MissingProviders_NormalizesProviders()
     {
         var path = CreateSettingsPath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllTextAsync(path, """
             {
-              "RefreshMinutes": 0,
               "Providers": {
                 "Codex": {
                   "Enabled": false,
@@ -58,7 +55,6 @@ public sealed class FileAppSettingsStoreTests
 
         var settings = await store.LoadAsync();
 
-        Assert.Equal(5, settings.RefreshMinutes);
         Assert.False(settings.GetProviderSettings(ProviderKind.Codex).Enabled);
         Assert.Equal(ProviderSourceMode.Cli, settings.GetProviderSettings(ProviderKind.Codex).SourceMode);
         Assert.Equal("codex-cookie", settings.GetProviderSettings(ProviderKind.Codex).CookieHeader);
@@ -72,7 +68,6 @@ public sealed class FileAppSettingsStoreTests
         var store = new FileAppSettingsStore(path);
         var settings = new AppSettings
         {
-            RefreshMinutes = 10,
             Providers = new Dictionary<ProviderKind, ProviderSettings>
             {
                 [ProviderKind.Codex] = new() { Enabled = false }
@@ -87,8 +82,6 @@ public sealed class FileAppSettingsStoreTests
 
         var json = await File.ReadAllTextAsync(path);
         using var document = JsonDocument.Parse(json);
-        Assert.True(document.RootElement.TryGetProperty(nameof(AppSettings.RefreshMinutes), out var refreshMinutes));
-        Assert.Equal(10, refreshMinutes.GetInt32());
         Assert.Contains(Environment.NewLine, json);
     }
 

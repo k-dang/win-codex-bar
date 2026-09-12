@@ -2,7 +2,6 @@ namespace WinCodexBar.Core.Models;
 
 public class AppSettings
 {
-    public int RefreshMinutes { get; set; } = 5;
     public Dictionary<ProviderKind, ProviderSettings> Providers { get; set; } = new();
 
     public static AppSettings CreateDefault()
