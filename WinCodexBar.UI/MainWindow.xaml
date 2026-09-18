@@ -210,105 +210,74 @@
 
                         <ScrollViewer Grid.Row="1"
                                       Grid.RowSpan="2"
-                                      AutomationProperties.AutomationId="DiagnosticsTableScrollViewer"
-                                      AutomationProperties.Name="Diagnostics table"
-                                      HorizontalScrollMode="Enabled"
-                                      HorizontalScrollBarVisibility="Auto"
-                                      HorizontalContentAlignment="Stretch"
+                                      AutomationProperties.AutomationId="DiagnosticsListScrollViewer"
+                                      AutomationProperties.Name="Diagnostics log"
+                                      HorizontalScrollMode="Disabled"
+                                      HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollMode="Enabled"
                                       VerticalScrollBarVisibility="Auto"
                                       MaxHeight="400">
-                            <Grid MinWidth="700" RowSpacing="8">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <Border CornerRadius="8"
-                                        Padding="6,4"
-                                        Background="{ThemeResource ControlFillColorSecondaryBrush}">
-                                    <Grid ColumnSpacing="6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="20"/>
-                                            <ColumnDefinition Width="88"/>
-                                            <ColumnDefinition Width="84"/>
-                                            <ColumnDefinition Width="72"/>
-                                            <ColumnDefinition Width="72"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="72"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="1" Text="Timestamp" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                        <TextBlock Grid.Column="2" Text="Provider" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                        <TextBlock Grid.Column="3" Text="Type" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                        <TextBlock Grid.Column="4" Text="Source" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                        <TextBlock Grid.Column="5" Text="Message" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                        <TextBlock Grid.Column="6" Text="Duration" FontWeight="SemiBold" Style="{StaticResource AppSubtleTextStyle}"/>
-                                    </Grid>
-                                </Border>
-
-                                <ItemsControl Grid.Row="1"
-                                              ItemsSource="{Binding FilteredDiagnosticsEntries}"
-                                              HorizontalContentAlignment="Stretch">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid ColumnSpacing="6" RowSpacing="2" Padding="0,3">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="20"/>
-                                                        <ColumnDefinition Width="88"/>
-                                                        <ColumnDefinition Width="84"/>
-                                                        <ColumnDefinition Width="72"/>
-                                                        <ColumnDefinition Width="72"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="72"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                    </Grid.RowDefinitions>
-                                                    <ToggleButton AutomationProperties.Name="Show entry detail"
-                                                                  Visibility="{Binding DetailToggleVisibility}"
-                                                                  IsChecked="{Binding IsDetailExpanded, Mode=TwoWay}"
-                                                                  Style="{StaticResource AppDetailToggleStyle}"
-                                                                  ToolTipService.ToolTip="Show detail">
-                                                        <FontIcon Glyph="&#xE76C;" FontSize="10"/>
-                                                    </ToggleButton>
-                                                    <TextBlock Grid.Column="1" Text="{Binding TimestampText}" FontFamily="Consolas" FontSize="12"/>
-                                                    <TextBlock Grid.Column="2"
-                                                               Text="{Binding ProviderName}"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               ToolTipService.ToolTip="{Binding ProviderName}"/>
-                                                    <TextBlock Grid.Column="3"
-                                                               Text="{Binding EventTypeName}"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               ToolTipService.ToolTip="{Binding EventTypeName}"/>
-                                                    <TextBlock Grid.Column="4"
-                                                               Text="{Binding SourceMethod}"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               ToolTipService.ToolTip="{Binding SourceMethod}"/>
-                                                    <TextBlock Grid.Column="5"
-                                                               Text="{Binding Message}"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               ToolTipService.ToolTip="{Binding Message}"/>
-                                                    <TextBlock Grid.Column="6" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12"/>
-                                                    <Border Grid.Row="1"
-                                                            Grid.Column="1"
-                                                            Grid.ColumnSpan="6"
-                                                            Margin="0,2,0,6"
-                                                            Padding="8,6"
-                                                            CornerRadius="6"
-                                                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
-                                                            Visibility="{Binding DetailVisibility}">
-                                                        <TextBlock Text="{Binding Detail}"
-                                                                   FontFamily="Consolas"
-                                                                   FontSize="11"
-                                                                   IsTextSelectionEnabled="True"
-                                                                   TextWrapping="Wrap"/>
-                                                    </Border>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Grid>
+                            <ItemsControl ItemsSource="{Binding FilteredDiagnosticsEntries}"
+                                          HorizontalContentAlignment="Stretch">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <!-- Two-line entry: meta row on top, wrapped message below. Fits the 420px window without horizontal scroll. -->
+                                        <Grid ColumnSpacing="6" RowSpacing="2" Padding="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <ToggleButton AutomationProperties.Name="Show entry detail"
+                                                          Visibility="{Binding DetailToggleVisibility}"
+                                                          IsChecked="{Binding IsDetailExpanded, Mode=TwoWay}"
+                                                          Style="{StaticResource AppDetailToggleStyle}"
+                                                          ToolTipService.ToolTip="Show detail">
+                                                <FontIcon Glyph="&#xE76C;" FontSize="10"/>
+                                            </ToggleButton>
+                                            <Grid Grid.Column="1" ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding TimestampText}" FontFamily="Consolas" FontSize="12" Style="{StaticResource AppSubtleTextStyle}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding EventTypeName}" FontWeight="SemiBold" FontSize="12"/>
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding ScopeText}"
+                                                           FontSize="12"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Style="{StaticResource AppSubtleTextStyle}"
+                                                           ToolTipService.ToolTip="{Binding ScopeText}"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12" Style="{StaticResource AppSubtleTextStyle}"/>
+                                            </Grid>
+                                            <TextBlock Grid.Row="1"
+                                                       Grid.Column="1"
+                                                       Text="{Binding Message}"
+                                                       TextWrapping="Wrap"
+                                                       IsTextSelectionEnabled="True"/>
+                                            <Border Grid.Row="2"
+                                                    Grid.Column="1"
+                                                    Margin="0,2,0,4"
+                                                    Padding="8,6"
+                                                    CornerRadius="6"
+                                                    Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                                    Visibility="{Binding DetailVisibility}">
+                                                <TextBlock Text="{Binding Detail}"
+                                                           FontFamily="Consolas"
+                                                           FontSize="11"
+                                                           IsTextSelectionEnabled="True"
+                                                           TextWrapping="Wrap"/>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </ScrollViewer>
                     </Grid>
                 </Border>
