@@ -268,7 +268,12 @@ public sealed class DiagnosticsLogRow : INotifyPropertyChanged
 
     public bool HasDetail => Detail.Length > 0;
 
+    /// Provider and source method joined as "Provider/Source", omitting empty parts.
+    public string ScopeText => string.Join("/", new[] { ProviderName, SourceMethod }.Where(part => part.Length > 0));
+
     public Visibility DetailToggleVisibility => HasDetail ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ProviderBadgeVisibility => ProviderName.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public bool IsDetailExpanded
     {
@@ -312,10 +317,9 @@ public sealed class DiagnosticsLogRow : INotifyPropertyChanged
 
     public string ToClipboardText()
     {
-        var scope = string.Join("/", new[] { ProviderName, SourceMethod }.Where(part => part.Length > 0));
         var header = string.Join(
             " ",
-            new[] { TimestampText, EventTypeName, scope, DurationText, Message }
+            new[] { TimestampText, EventTypeName, ScopeText, DurationText, Message }
                 .Where(part => !string.IsNullOrEmpty(part)));
 
         if (!HasDetail)
