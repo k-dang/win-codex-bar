@@ -273,6 +273,8 @@ public sealed class DiagnosticsLogRow : INotifyPropertyChanged
 
     public Visibility DetailToggleVisibility => HasDetail ? Visibility.Visible : Visibility.Collapsed;
 
+    public Visibility ProviderBadgeVisibility => ProviderName.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
     public bool IsDetailExpanded
     {
         get => _isDetailExpanded;

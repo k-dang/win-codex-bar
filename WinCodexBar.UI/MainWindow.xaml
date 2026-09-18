@@ -243,18 +243,27 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding TimestampText}" FontFamily="Consolas" FontSize="12" Style="{StaticResource AppSubtleTextStyle}"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding EventTypeName}" FontWeight="SemiBold" FontSize="12"/>
-                                                <TextBlock Grid.Column="2"
-                                                           Text="{Binding ScopeText}"
+                                                <Border Grid.Column="1"
+                                                        Padding="6,0"
+                                                        CornerRadius="4"
+                                                        VerticalAlignment="Center"
+                                                        Background="{StaticResource AppAccentMutedBrush}"
+                                                        Visibility="{Binding ProviderBadgeVisibility}">
+                                                    <TextBlock Text="{Binding ProviderName}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="2" Text="{Binding EventTypeName}" FontWeight="SemiBold" FontSize="12"/>
+                                                <TextBlock Grid.Column="3"
+                                                           Text="{Binding SourceMethod}"
                                                            FontSize="12"
                                                            TextTrimming="CharacterEllipsis"
                                                            Style="{StaticResource AppSubtleTextStyle}"
-                                                           ToolTipService.ToolTip="{Binding ScopeText}"/>
-                                                <TextBlock Grid.Column="3" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12" Style="{StaticResource AppSubtleTextStyle}"/>
+                                                           ToolTipService.ToolTip="{Binding SourceMethod}"/>
+                                                <TextBlock Grid.Column="4" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12" Style="{StaticResource AppSubtleTextStyle}"/>
                                             </Grid>
                                             <TextBlock Grid.Row="1"
                                                        Grid.Column="1"
